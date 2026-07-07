@@ -4,3 +4,5 @@ data.db
 backups/
 .env
 serviceAccountKey.json
+
+server_*.txt
