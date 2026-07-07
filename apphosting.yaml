@@ -1,0 +1,8 @@
+runConfig:
+  runCommands:
+    - command: npm start
+      env:
+        - NODE_ENV=production
+
+backend:
+  instanceClass: default

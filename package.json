@@ -1,0 +1,21 @@
+{
+  "name": "control-chicha",
+  "version": "2.0.0",
+  "description": "Sistema de registro de ventas de chicha",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node tests/api.test.js"
+  },
+  "dependencies": {
+    "@google-cloud/firestore": "^8.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^4.21.0",
+    "express-rate-limit": "^8.5.2",
+    "firebase": "^12.15.0",
+    "firebase-admin": "^14.1.0",
+    "helmet": "^8.2.0"
+  }
+}

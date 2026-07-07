@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Control Chicha</title>
+<link rel="stylesheet" href="/styles.css">
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getAnalytics, logEvent } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyD7tXOMDql-zAUeOWcxLKuA215IU1JCaMY",
+    authDomain: "pandichicha-2026.firebaseapp.com",
+    projectId: "pandichicha-2026",
+    storageBucket: "pandichicha-2026.firebasestorage.app",
+    messagingSenderId: "717591431821",
+    appId: "1:717591431821:web:b7bb47988352560f9130c4",
+    measurementId: "G-DSMFGGGPST"
+  };
+
+  try {
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    window.__firebaseAnalytics = analytics;
+    window.__logFirebaseEvent = (name, params) => {
+      try { logEvent(analytics, name, params); } catch(e) {}
+    };
+    console.log('[Analytics] Firebase Analytics inicializado');
+  } catch(e) {
+    console.warn('[Analytics] Error:', e.message);
+    window.__logFirebaseEvent = () => {};
+  }
+</script>
+</head>
+<body>
+
+<!-- Header -->
+<header id="appHeader">
+  <div class="h-left">
+    <h1><img src="/logo.png" alt="Pandi Chicha" class="logo-icon" onerror="this.style.display='none'"> Control Chicha</h1>
+    <div class="h-date" id="headerDate"></div>
+  </div>
+  <div class="h-right">
+    <span class="rate-badge" id="rateBadge">Tasa: --</span>
+  </div>
+</header>
+
+<!-- Main Content -->
+<main id="mainContent">
+
+  <!-- TAB: Vender -->
+  <section id="tabVender" class="tab-content active">
+    <div class="stats-row" id="statsRow"></div>
+    <div id="chichaStatus" class="chicha-status"></div>
+    <div id="venderTopBar" class="vender-top"></div>
+    <div id="productsContainer"></div>
+    <div id="carritoFab" class="carrito-fab hidden" onclick="window.abrirCarrito()">
+      <span class="carrito-fab-icon">🛒</span>
+      <span class="carrito-fab-count" id="carritoFabCount">0</span>
+    </div>
+  </section>
+
+  <!-- TAB: Historial -->
+  <section id="tabHistorial" class="tab-content">
+    <div class="section-head">
+      <h2>📋 Historial</h2>
+    </div>
+    <div class="filters" id="historialFilters">
+      <input type="date" id="filterDesde" onchange="cargarHistorial()">
+      <input type="date" id="filterHasta" onchange="cargarHistorial()">
+      <select id="filterVendedor" onchange="cargarHistorial()"><option value="">Todos</option></select>
+    </div>
+    <div id="historialTotals" class="historial-totals"></div>
+    <div id="historialList"></div>
+  </section>
+
+  <!-- TAB: Reportes -->
+  <section id="tabReportes" class="tab-content">
+    <div class="section-head"><h2>📊 Reportes</h2></div>
+    <div class="filters">
+      <select id="reporteRango" onchange="cargarReportes()">
+        <option value="hoy">Hoy</option>
+        <option value="semana">Esta semana</option>
+        <option value="mes">Este mes</option>
+        <option value="todo">Todo</option>
+      </select>
+    </div>
+    <div id="reportesContent"></div>
+  </section>
+
+  <!-- TAB: Inventario -->
+  <section id="tabInventario" class="tab-content">
+    <div class="sub-tabs">
+      <button class="sub-tab active" data-subtab="items" onclick="switchSubTab('items')">📦 Items</button>
+      <button class="sub-tab" data-subtab="receta" onclick="switchSubTab('receta')">🧪 Receta</button>
+    </div>
+    <div id="subtabItems" class="subtab-content active">
+      <div class="section-head">
+        <h2>Items</h2>
+        <button class="btn btn-sm btn-primary" onclick="mostrarModalInventario()">+ Agregar</button>
+      </div>
+      <div id="inventarioList"></div>
+    </div>
+    <div id="subtabReceta" class="subtab-content">
+      <div id="recetaContent"></div>
+    </div>
+  </section>
+
+  <!-- TAB: Clientes -->
+  <section id="tabClientes" class="tab-content">
+    <div class="section-head">
+      <h2>👥 Clientes</h2>
+      <button class="btn btn-sm btn-primary" onclick="mostrarModalCliente()">+ Nuevo</button>
+    </div>
+    <div class="filters">
+      <input type="text" id="buscarCliente" placeholder="Buscar cliente..." oninput="cargarClientes()">
+    </div>
+    <div id="clientesList"></div>
+  </section>
+
+  <!-- TAB: Configuración -->
+  <section id="tabConfig" class="tab-content">
+    <div class="section-head"><h2>⚙️ Configuración</h2></div>
+    <div id="configContent"></div>
+  </section>
+
+</main>
+
+<!-- Bottom Navigation -->
+<nav id="bottomNav">
+  <button class="nav-btn active" data-tab="vender"><span class="nav-icon">🥤</span><span class="nav-label">Vender</span></button>
+  <button class="nav-btn" data-tab="historial"><span class="nav-icon">📋</span><span class="nav-label">Historial</span></button>
+  <button class="nav-btn" data-tab="reportes"><span class="nav-icon">📊</span><span class="nav-label">Reportes</span></button>
+  <button class="nav-btn" data-tab="inventario"><span class="nav-icon">📦</span><span class="nav-label">Inventario</span></button>
+  <button class="nav-btn" data-tab="clientes"><span class="nav-icon">👥</span><span class="nav-label">Clientes</span></button>
+  <button class="nav-btn" data-tab="config"><span class="nav-icon">⚙️</span><span class="nav-label">Config</span></button>
+</nav>
+
+<!-- Modal: Comenzar Día -->
+<div id="modalInicioDia" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>🌅 Comenzar Día</h3>
+    <div class="modal-body" style="font-size:0.85rem;color:var(--text-light);">
+      Configura los datos para iniciar la jornada
+    </div>
+    <div class="modal-field">
+      <label>💵 Tasa del dólar (Bs/$)</label>
+      <input type="number" id="inicioTasa" step="0.01" min="0" placeholder="0.00">
+    </div>
+    <div class="modal-field">
+      <label>🧊 Chicha inicial (onzas)</label>
+      <input type="number" id="inicioOnzas" step="1" min="0" placeholder="720">
+    </div>
+    <div class="modal-field">
+      <label>📍 Lugar de venta</label>
+      <input type="text" id="inicioLugar" placeholder="Ej: Mercado Central" list="listaLugares">
+      <datalist id="listaLugares"></datalist>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-primary" onclick="comenzarDia()" style="flex:1;">🚀 Comenzar Día</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Chicha agotada -->
+<div id="modalChichaAgotada" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>⚠️ Chicha Agotada</h3>
+    <div class="modal-body">
+      <div style="font-size:1rem;color:var(--text-light);">No queda más chicha en el envase.</div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="window.cerrarModal('modalChichaAgotada');document.getElementById('chichaResetDiv')?.classList.remove('hidden');document.getElementById('chichaNuevoTotal')?.focus()">🔄 Agregar más</button>
+      <button class="btn btn-primary" onclick="cerrarDia()">🔚 Cerrar día</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Venta Unitaria -->
+<div id="modalVentaUnidad" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>Confirmar Venta</h3>
+    <div class="modal-body">
+      <div class="modal-producto" id="modalProductoName"></div>
+      <div class="modal-precio" id="modalProductoPrecio"></div>
+    </div>
+    <div class="modal-pago">
+      <div class="mp-row">
+        <label>Moneda:</label>
+        <div class="mp-opciones" id="modalMoneda">
+          <label class="mp-opt active" data-val="USD" onclick="window.seleccionarMoneda('USD')">
+            <span class="mp-dot"></span> USD $
+          </label>
+          <label class="mp-opt" data-val="VES" onclick="window.seleccionarMoneda('VES')">
+            <span class="mp-dot"></span> Bs
+          </label>
+        </div>
+      </div>
+      <div class="mp-row" id="modalMetodoPagoRow">
+        <label>Pago:</label>
+        <div class="mp-opciones" id="modalMetodoPago">
+          <label class="mp-opt pago-opt active" data-val="efectivo" onclick="window.seleccionarMetodoPago('efectivo')">
+            <span class="mp-dot"></span> Efectivo
+          </label>
+          <label class="mp-opt pago-opt hidden" data-val="pago_movil" id="optPagoMovilUnidad" onclick="window.seleccionarMetodoPago('pago_movil')">
+            <span class="mp-dot"></span> Pago Movil
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-field">
+      <label>Cliente (opcional)</label>
+      <select id="modalClienteUnidad"><option value="">Sin cliente</option></select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="window.cerrarModal('modalVentaUnidad')">Cancelar</button>
+      <button class="btn btn-success" onclick="window.confirmarVentaUnidad()">Vender</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Carrito de Venta -->
+<div id="modalVentaCarrito" class="modal-overlay hidden">
+  <div class="modal modal-lg">
+    <h3>Venta Varias</h3>
+    <div class="carrito-header">
+      <span style="font-size:0.8rem;color:var(--text-light);">Productos</span>
+    </div>
+    <div id="carritoItems" class="carrito-list"></div>
+    <div id="carritoTotal" class="carrito-total"></div>
+    <div class="modal-pago">
+      <div class="mp-row">
+        <label>Moneda:</label>
+        <div class="mp-opciones" id="modalMonedaCarrito">
+          <label class="mp-opt active" data-val="USD" onclick="window.seleccionarMoneda('USD')">
+            <span class="mp-dot"></span> USD $
+          </label>
+          <label class="mp-opt" data-val="VES" onclick="window.seleccionarMoneda('VES')">
+            <span class="mp-dot"></span> Bs
+          </label>
+        </div>
+      </div>
+      <div class="mp-row" id="modalMetodoPagoRowCarrito">
+        <label>Pago:</label>
+        <div class="mp-opciones" id="modalMetodoPagoCarrito">
+          <label class="mp-opt pago-opt active" data-val="efectivo" onclick="window.seleccionarMetodoPago('efectivo')">
+            <span class="mp-dot"></span> Efectivo
+          </label>
+          <label class="mp-opt pago-opt hidden" data-val="pago_movil" id="optPagoMovilCarrito" onclick="window.seleccionarMetodoPago('pago_movil')">
+            <span class="mp-dot"></span> Pago Movil
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-field">
+      <label>Cliente (opcional)</label>
+      <select id="modalClienteCarrito"><option value="">Sin cliente</option></select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="window.cerrarModal('modalVentaCarrito')">Cancelar</button>
+      <button class="btn btn-success" onclick="window.confirmarVentaCarrito()">Vender todo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Cliente -->
+<div id="modalClienteForm" class="modal-overlay hidden">
+  <div class="modal">
+    <h3 id="modalClienteTitle">👤 Nuevo Cliente</h3>
+    <div class="modal-field">
+      <label>Nombre</label>
+      <input type="text" id="clienteNombre" placeholder="Nombre del cliente">
+    </div>
+    <div class="modal-field">
+      <label>Teléfono</label>
+      <input type="text" id="clienteTelefono" placeholder="0412-..." >
+    </div>
+    <div class="modal-field">
+      <label>Notas</label>
+      <textarea id="clienteNotas" placeholder="Observaciones..." rows="3"></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="cerrarModal('modalClienteForm')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarCliente()">Guardar</button>
+    </div>
+    <input type="hidden" id="clienteEditId" value="">
+  </div>
+</div>
+
+<!-- Modal: Ver Cliente -->
+<div id="modalClienteDetalle" class="modal-overlay hidden">
+  <div class="modal modal-lg">
+    <h3 id="detalleClienteNombre">Cliente</h3>
+    <div id="detalleClienteInfo" class="modal-body"></div>
+    <h4 style="margin:12px 0 8px;font-size:0.9rem;">Historial de compras</h4>
+    <div id="detalleClienteVentas" class="modal-ventas-list"></div>
+    <div class="modal-btns" style="margin-top:12px;">
+      <button class="btn btn-outline" onclick="cerrarModal('modalClienteDetalle')">Cerrar</button>
+      <button class="btn btn-danger btn-sm" onclick="eliminarClienteActual()">Eliminar cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Inventario -->
+<div id="modalInventarioForm" class="modal-overlay hidden">
+  <div class="modal">
+    <h3 id="modalInvTitle">📦 Nuevo Item</h3>
+    <div class="modal-field">
+      <label>Nombre</label>
+      <input type="text" id="invNombre" placeholder="Ej: Azúcar">
+    </div>
+    <div class="modal-field">
+      <label>Unidad</label>
+      <select id="invUnidad"><option value="unidad">Unidad</option><option value="kg">Kg</option><option value="lt">Litro</option><option value="gr">Gramo</option><option value="ml">Mililitro</option><option value="paquete">Paquete</option></select>
+    </div>
+    <div class="modal-field">
+      <label>Stock inicial</label>
+      <input type="number" id="invStock" value="0" step="0.1" min="0">
+    </div>
+    <div class="modal-field">
+      <label>Stock mínimo (alerta)</label>
+      <input type="number" id="invStockMin" value="0" step="0.1" min="0">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="cerrarModal('modalInventarioForm')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarInventario()">Guardar</button>
+    </div>
+    <input type="hidden" id="invEditId" value="">
+  </div>
+</div>
+
+<!-- Modal: Ingrediente Receta -->
+<div id="modalIngrediente" class="modal-overlay hidden">
+  <div class="modal">
+    <h3 id="modalIngTitle">🧪 Agregar Ingrediente</h3>
+    <div class="modal-field">
+      <label>Nombre</label>
+      <input type="text" id="ingNombre" placeholder="Ej: Maíz">
+    </div>
+    <div class="modal-field" id="ingCantField">
+      <label>Cantidad para el lote</label>
+      <div style="display:flex;gap:8px;">
+        <input type="number" id="ingCantidad" step="0.01" min="0" placeholder="0" style="flex:2;">
+        <select id="ingUnidad" style="flex:1;">
+          <option value="kg">Kg</option><option value="gr">Gramo</option><option value="lt">Litro</option><option value="ml">Mililitro</option><option value="unidad">Unidad</option><option value="paquete">Paquete</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-field" id="ingUnidadField" style="display:none;">
+      <label>Unidad</label>
+      <span id="ingUnidadTexto" style="font-weight:600;font-size:0.9rem;"></span>
+    </div>
+    <div class="modal-field">
+      <label>Precio por unidad ($)</label>
+      <input type="number" id="ingPrecio" step="0.01" min="0" placeholder="0.00">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="cerrarModal('modalIngrediente')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarIngrediente()">Guardar</button>
+    </div>
+    <input type="hidden" id="ingEditId" value="">
+  </div>
+</div>
+
+<!-- Modal: Movimiento Inventario -->
+<div id="modalInvMovimiento" class="modal-overlay hidden">
+  <div class="modal">
+    <h3 id="movInvTitle">📦 Ajustar Stock</h3>
+    <div class="modal-field">
+      <label id="movInvNombre"></label>
+      <div style="display:flex;gap:8px;">
+        <input type="number" id="movInvCantidad" placeholder="Cantidad" step="0.1" min="0">
+        <select id="movInvTipo">
+          <option value="in">+ Entrada</option>
+          <option value="out">- Salida</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-field">
+      <label>Nota (opcional)</label>
+      <input type="text" id="movInvNota" placeholder="Ej: Compra semanal">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="cerrarModal('modalInvMovimiento')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarMovimientoInv()">Aplicar</button>
+    </div>
+    <input type="hidden" id="movInvItemId" value="">
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast hidden"></div>
+
+<script type="module" src="/js/main.js"></script>
+</body>
+</html>

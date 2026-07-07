@@ -1,0 +1,19 @@
+{
+  "firestore": {
+    "database": "(default)",
+    "location": "nam5",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "apphosting": {
+    "root": ".",
+    "ignore": [
+      "node_modules",
+      ".git",
+      "backups",
+      "*.db",
+      ".env",
+      "serviceAccountKey.json"
+    ]
+  }
+}
