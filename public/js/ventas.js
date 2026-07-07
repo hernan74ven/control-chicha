@@ -328,7 +328,8 @@ export async function comenzarDia() {
 }
 
 export async function cerrarDia() {
-  if (!confirm('Cerrar el dia? Se reseteara la chicha y podras empezar de nuevo.')) return;
+  if (!confirm('¿Estás seguro de cerrar el día? Esta acción no se puede deshacer.')) return;
+  if (!confirm('⚠️ CONFIRMACIÓN FINAL: ¿Cerrar el día ahora? Se reseteará la chicha y empezarás un nuevo día.')) return;
   try {
     await api('PUT', '/config', { key: 'chicha_inicial_onzas', value: '0' });
     chichaVendidoHoy = 0;
