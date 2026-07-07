@@ -5,6 +5,7 @@ import { trackVenta } from './analytics.js';
 
 let chichaInicialOnzas = 0;
 let chichaVendidoHoy = 0;  // contador local para evitar depender de consultas a Firestore
+let diaCerradoHoy = false;
 export let monedaSeleccionada = 'USD';
 export let metodoPagoSeleccionado = 'efectivo';
 let vendedorActivo = null;
@@ -32,6 +33,7 @@ let carrito = [];
 export function getCarrito() { return carrito; }
 
 export function agregarAlCarrito(tipo, id, nombre, precioUsd) {
+  if (!checkDiaActivo()) return;
   const existente = carrito.find(item => item.producto_id === id && item.tipo_producto === tipo);
   if (existente) {
     existente.cantidad++;
@@ -259,15 +261,22 @@ export async function renderChichaStatus() {
   else if (pct <= 30) fillClass = 'low';
 
   if (chichaInicialOnzas <= 0) {
-    el.innerHTML = `
-      <div class="cs-header">
-        <span class="cs-label">Chicha en envase</span>
-        <span style="font-size:0.72rem;color:var(--text-light);">Dia no iniciado</span>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-        <span style="font-size:0.75rem;color:var(--text-light);">Inicia el dia para comenzar a vender</span>
-        <button class="btn btn-sm btn-primary" onclick="window.mostrarInicioDia()">Comenzar Dia</button>
-      </div>`;
+    el.innerHTML = diaCerradoHoy
+      ? `<div class="cs-header">
+          <span class="cs-label">Chicha en envase</span>
+          <span style="font-size:0.72rem;color:var(--danger);font-weight:600;">Ya cerró el día</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <span style="font-size:0.75rem;color:var(--text-light);">Hoy ya se trabajó y se cerró</span>
+        </div>`
+      : `<div class="cs-header">
+          <span class="cs-label">Chicha en envase</span>
+          <span style="font-size:0.72rem;color:var(--text-light);">Dia no iniciado</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <span style="font-size:0.75rem;color:var(--text-light);">Inicia el dia para comenzar a vender</span>
+          <button class="btn btn-sm btn-primary" onclick="window.mostrarInicioDia()">Comenzar Dia</button>
+        </div>`;
     return;
   }
 
@@ -311,6 +320,7 @@ export async function comenzarDia() {
     await api('PUT', '/config', { key: 'chicha_inicial_onzas', value: String(onzas) });
     await api('PUT', '/config', { key: 'lugar_actual', value: lugar });
     chichaVendidoHoy = 0;
+    diaCerradoHoy = false;
     if (lugar) {
       const config = await api('GET', '/config');
       const lugares = config.lugares_usados ? JSON.parse(config.lugares_usados) : [];
@@ -343,6 +353,7 @@ export async function cerrarDia() {
     });
     await api('PUT', '/config', { key: 'chicha_inicial_onzas', value: '0' });
     chichaVendidoHoy = 0;
+    diaCerradoHoy = true;
     toast('Dia cerrado');
     cerrarModal('modalChichaAgotada');
     window.renderAll();
@@ -396,6 +407,7 @@ export function seleccionarMetodoPago(mp) {
 }
 
 export function iniciarVenta(tipo, id, nombre, precioUsd) {
+  if (!checkDiaActivo()) return;
   state.ventaPendiente = { tipo_producto: tipo, producto_id: id, producto_nombre: nombre, precio_usd: precioUsd };
   monedaSeleccionada = 'USD';
   metodoPagoSeleccionado = 'efectivo';
@@ -515,10 +527,21 @@ async function checkChichaAgotada() {
   }
 }
 
+function checkDiaActivo() {
+  if (chichaInicialOnzas > 0) return true;
+  const msg = diaCerradoHoy ? 'Ya cerró el día' : 'No ha iniciado el día';
+  toast(msg);
+  return false;
+}
+
 export async function inicializarChichaVendido() {
   try {
     const hoy = todayStr();
-    const ventasHoy = await api('GET', `/ventas?desde=${hoy}&hasta=${hoy}`);
+    const [ventasHoy, dias] = await Promise.all([
+      api('GET', `/ventas?desde=${hoy}&hasta=${hoy}`),
+      api('GET', `/dias?desde=${hoy}&hasta=${hoy}`)
+    ]);
+    diaCerradoHoy = dias.length > 0 && dias[0].estado === 'cerrado';
     chichaVendidoHoy = 0;
     ventasHoy.forEach(v => {
       if (v.tipo_producto === 'chicha') {
