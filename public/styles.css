@@ -905,4 +905,15 @@ main {
   align-items: center;
   justify-content: center;
 }
+/* Day closed badge */
+.day-closed-badge {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--success-light, #e8f5e9);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--success, #2e7d32);
+  text-align: center;
+}
 

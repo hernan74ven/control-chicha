@@ -11,14 +11,17 @@ export async function cargarHistorial() {
   if (vendedor) url += '&vendedor_id=' + vendedor;
 
   try {
-    const ventas = await api('GET', url);
-    renderHistorial(ventas);
+    const [ventas, dias] = await Promise.all([
+      api('GET', url),
+      api('GET', `/dias?desde=${desde}&hasta=${hasta}`)
+    ]);
+    renderHistorial(ventas, dias);
   } catch (e) {
     toast('Error al cargar historial');
   }
 }
 
-function renderHistorial(ventas) {
+function renderHistorial(ventas, dias) {
   const totalsEl = document.getElementById('historialTotals');
   const listEl = document.getElementById('historialList');
 
@@ -43,8 +46,14 @@ function renderHistorial(ventas) {
     <div class="ht-item"><div class="ht-label">Bs P.Movil</div><div class="ht-value ves">${bsPM > 0 ? fmtVes(bsPM) : '0'}</div></div>
   `;
 
-  if (ventas.length === 0) {
-    listEl.innerHTML = '<div class="empty-state">No hay ventas en este periodo</div>';
+  if (ventas.length === 0 && dias.length === 0) {
+    listEl.innerHTML = '<div class="empty-state">Este día no fue trabajado</div>';
+    return;
+  }
+
+  if (ventas.length === 0 && dias.length > 0) {
+    const d = dias[0];
+    listEl.innerHTML = `<div class="empty-state">✅ Día cerrado — ${d.ventas_count} ventas, $${fmtCurrency(d.total_usd)}${d.total_ves > 0 ? ' · ' + fmtVes(d.total_ves) : ''}</div>`;
     return;
   }
 
@@ -73,6 +82,12 @@ function renderHistorial(ventas) {
       <button class="hi-delete" onclick="window.eliminarVenta('${v.id}')">X</button>
     </div>`;
   });
+
+  if (dias.length > 0) {
+    const d = dias[0];
+    html += `<div class="day-closed-badge">✅ Día cerrado — ${d.ventas_count} ventas · $${fmtCurrency(d.total_usd)}${d.total_ves > 0 ? ' · ' + fmtVes(d.total_ves) : ''}</div>`;
+  }
+
   listEl.innerHTML = html;
 }
 
@@ -85,5 +100,3 @@ export async function eliminarVenta(id) {
     renderVender();
   } catch (e) { toast('Error'); }
 }
-
-

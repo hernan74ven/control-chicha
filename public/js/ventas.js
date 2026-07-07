@@ -331,6 +331,16 @@ export async function cerrarDia() {
   if (!confirm('¿Estás seguro de cerrar el día? Esta acción no se puede deshacer.')) return;
   if (!confirm('⚠️ CONFIRMACIÓN FINAL: ¿Cerrar el día ahora? Se reseteará la chicha y empezarás un nuevo día.')) return;
   try {
+    const hoy = todayStr();
+    const ventasHoy = await api('GET', `/ventas?desde=${hoy}&hasta=${hoy}`);
+    const total_usd = ventasHoy.reduce((s, v) => s + v.precio_usd, 0);
+    const total_ves = ventasHoy.reduce((s, v) => s + v.precio_ves, 0);
+    await api('POST', '/dias/cerrar', {
+      fecha: hoy,
+      ventas_count: ventasHoy.length,
+      total_usd,
+      total_ves
+    });
     await api('PUT', '/config', { key: 'chicha_inicial_onzas', value: '0' });
     chichaVendidoHoy = 0;
     toast('Dia cerrado');

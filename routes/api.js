@@ -722,6 +722,44 @@ router.post('/backup', async (req, res) => {
   }
 });
 
+// ---- DIAS (registro de cierre de día) ----
+router.post('/dias/cerrar', async (req, res) => {
+  try {
+    const { fecha, ventas_count, total_usd, total_ves } = req.body;
+    if (!fecha) return jsonError(res, 'Fecha requerida');
+    await db().collection('dias').doc(fecha).set({
+      fecha,
+      estado: 'cerrado',
+      ventas_count: ventas_count || 0,
+      total_usd: total_usd || 0,
+      total_ves: total_ves || 0,
+      cerrado_en: new Date().toISOString()
+    });
+    jsonOk(res, { ok: true });
+  } catch (e) {
+    jsonError(res, 'Error al cerrar día', 500);
+  }
+});
+
+router.get('/dias', async (req, res) => {
+  try {
+    const { desde, hasta } = req.query;
+    const snapshot = await db().collection('dias').get();
+    const result = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const f = data.fecha || doc.id;
+      if (desde && f < desde) return;
+      if (hasta && f > hasta) return;
+      result.push({ id: doc.id, ...data });
+    });
+    result.sort((a, b) => b.fecha.localeCompare(a.fecha));
+    jsonOk(res, result);
+  } catch (e) {
+    jsonError(res, 'Error al leer días', 500);
+  }
+});
+
 // ---- MOCK SYNC ENDPOINTS ----
 router.get('/sync/status', (req, res) => {
   jsonOk(res, { enabled: true, syncing: false, lastSync: new Date().toISOString() });
