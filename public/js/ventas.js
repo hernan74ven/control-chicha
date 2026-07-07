@@ -519,6 +519,14 @@ export async function inicializarChichaVendido() {
   } catch (e) { chichaVendidoHoy = 0; }
 }
 
+export async function sincronizarChichaVendido() {
+  const antes = chichaVendidoHoy;
+  await inicializarChichaVendido();
+  if (chichaVendidoHoy !== antes) {
+    renderChichaStatus();
+  }
+}
+
 export async function iniciarLoteChicha() {
   const val = parseFloat(document.getElementById('chichaInitInput').value);
   if (!val || val <= 0) { toast('Ingresa una cantidad valida'); return; }

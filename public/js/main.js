@@ -9,7 +9,7 @@ import {
   seleccionarMoneda, seleccionarMetodoPago,
   toggleModoVarias,
   agregarAlCarrito, carritoSumar, carritoRestar, carritoEliminar, abrirCarrito,
-  iniciarVenta, confirmarVentaUnidad, inicializarChichaVendido,
+  iniciarVenta, confirmarVentaUnidad, inicializarChichaVendido, sincronizarChichaVendido,
   confirmarVentaCarrito,
   iniciarLoteChicha, reabastecerChicha,
 } from './ventas.js';
@@ -94,6 +94,9 @@ async function init() {
     }
   }, 500);
 }
+
+// Sync chicha counter across devices every 7 seconds
+setInterval(() => sincronizarChichaVendido(), 7000);
 
 // ---- Wire up tab buttons ----
 document.querySelectorAll('.nav-btn').forEach(btn => {
