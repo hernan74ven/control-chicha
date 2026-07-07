@@ -10,21 +10,26 @@ function initFirebase() {
   if (isInitialized) return db;
 
   try {
-    // Try service account file first (local development)
-    const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || './serviceAccountKey.json';
-    const resolvedPath = path.resolve(__dirname, '..', serviceAccountPath);
-
-    if (fs.existsSync(resolvedPath)) {
-      const serviceAccount = require(resolvedPath);
-      const app = admin.initializeApp({
-        credential: admin.cert(serviceAccount),
-      });
+    // Service account via env var (Railway, Render, etc.)
+    const envJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    if (envJson) {
+      const serviceAccount = JSON.parse(envJson);
+      const app = admin.initializeApp({ credential: admin.cert(serviceAccount) });
       db = getFirebaseFirestore(app);
     } else {
-      // App Hosting: use built-in credentials (no file needed)
-      console.log('[Firebase] Usando credenciales integradas de App Hosting');
-      const app = admin.initializeApp({});
-      db = getFirebaseFirestore(app);
+      // Try service account file (local development)
+      const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || './serviceAccountKey.json';
+      const resolvedPath = path.resolve(__dirname, '..', serviceAccountPath);
+      if (fs.existsSync(resolvedPath)) {
+        const serviceAccount = require(resolvedPath);
+        const app = admin.initializeApp({ credential: admin.cert(serviceAccount) });
+        db = getFirebaseFirestore(app);
+      } else {
+        // App Hosting: use built-in credentials
+        console.log('[Firebase] Usando credenciales integradas de App Hosting');
+        const app = admin.initializeApp({});
+        db = getFirebaseFirestore(app);
+      }
     }
 
     db.settings({ ignoreUndefinedProperties: true });
