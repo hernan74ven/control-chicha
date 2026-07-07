@@ -1,0 +1,18 @@
+{
+  "name": "Control Chicha",
+  "short_name": "Chicha",
+  "description": "Control de ventas de chicha",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF3E0",
+  "theme_color": "#E65100",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

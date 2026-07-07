@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#E65100">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Chicha">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon.svg">
 <title>Control Chicha</title>
 <link rel="stylesheet" href="/styles.css">
 <script type="module">
@@ -38,7 +44,7 @@
 <!-- Header -->
 <header id="appHeader">
   <div class="h-left">
-    <h1><img src="/logo.png" alt="Pandi Chicha" class="logo-icon" onerror="this.style.display='none'"> Control Chicha</h1>
+    <h1><img src="/icon.svg" alt="Pandi Chicha" class="logo-icon"> Control Chicha</h1>
     <div class="h-date" id="headerDate"></div>
   </div>
   <div class="h-right">
@@ -394,5 +400,10 @@
 <div id="toast" class="toast hidden"></div>
 
 <script type="module" src="/js/main.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+</script>
 </body>
 </html>
