@@ -450,6 +450,18 @@ router.post('/ventas', async (req, res) => {
   }
 });
 
+router.delete('/ventas', async (req, res) => {
+  try {
+    const snapshot = await db().collection('ventas').get();
+    const batch = db().batch();
+    snapshot.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+    jsonOk(res, { deleted: snapshot.size });
+  } catch (e) {
+    jsonError(res, 'Error al eliminar ventas', 500);
+  }
+});
+
 router.delete('/ventas/:id', async (req, res) => {
   try {
     await db().collection('ventas').doc(req.params.id).delete();
