@@ -1,4 +1,0 @@
-◇ injected env (8) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
-[Firebase] Firestore inicializado correctamente
-Control Chicha corriendo en http://localhost:3000
-Accede desde tu celular en la misma red usando la IP local
