@@ -95,8 +95,8 @@ async function init() {
   }, 500);
 }
 
-// Sync chicha counter across devices every 7 seconds
-setInterval(() => sincronizarChichaVendido(), 7000);
+// Sync chicha counter across devices every 5 minutes
+setInterval(() => sincronizarChichaVendido(), 300000);
 
 // ---- Wire up tab buttons ----
 document.querySelectorAll('.nav-btn').forEach(btn => {
