@@ -146,9 +146,9 @@ export function renderHeader() {
   document.getElementById('headerDate').textContent =
     now.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   const t = getTasa();
-  const lug = state.config.lugar_actual || '';
+  const punto = state.config.punto_actual || state.config.lugar_actual || '';
   document.getElementById('rateBadge').textContent = t > 0
-    ? 'Bs ' + t.toFixed(2) + (lug ? ' ' + lug : '')
+    ? 'Bs ' + t.toFixed(2) + (punto ? ' ' + punto : '')
     : 'Configurar tasa';
 }
 
@@ -281,10 +281,10 @@ export async function renderChichaStatus() {
     return;
   }
 
-  const lugarActual = state.config.lugar_actual || '';
+  const puntoActual = state.config.punto_actual || state.config.lugar_actual || '';
   el.innerHTML = `
     <div class="cs-header">
-      <span class="cs-label">Chicha en envase${lugarActual ? ' ' + lugarActual : ''}</span>
+      <span class="cs-label">Chicha en envase${puntoActual ? ' ' + puntoActual : ''}</span>
       <span class="cs-info">${fmtCurrency(restante)} oz / ${fmtCurrency(chichaInicialOnzas)} oz</span>
     </div>
     <div class="cs-bar">
@@ -300,40 +300,40 @@ export async function mostrarInicioDia() {
   try {
     const config = await api('GET', '/config');
     state.config = config;
-    const lugares = config.lugares_usados ? JSON.parse(config.lugares_usados) : [];
-    const dl = document.getElementById('listaLugares');
-    dl.innerHTML = lugares.map(l => `<option value="${l}">`).join('');
+    const puntos = config.puntos_usados ? JSON.parse(config.puntos_usados) : config.lugares_usados ? JSON.parse(config.lugares_usados) : [];
+    const dl = document.getElementById('listaPuntos');
+    dl.innerHTML = puntos.map(p => `<option value="${p}">`).join('');
   } catch (e) { /* ignore */ }
   document.getElementById('inicioTasa').value = state.config.tasa_dolar || '';
   document.getElementById('inicioOnzas').value = state.config.receta_total_onzas || '720';
-  document.getElementById('inicioLugar').value = state.config.lugar_actual || '';
+  document.getElementById('inicioPunto').value = state.config.punto_actual || state.config.lugar_actual || '';
   abrirModal('modalInicioDia');
 }
 
 export async function comenzarDia() {
   const tasa = parseFloat(document.getElementById('inicioTasa').value);
   const onzas = parseFloat(document.getElementById('inicioOnzas').value);
-  const lugar = document.getElementById('inicioLugar').value.trim();
+  const punto = document.getElementById('inicioPunto').value.trim();
   if (!tasa || tasa <= 0) { toast('Ingresa la tasa del dolar'); return; }
   if (!onzas || onzas <= 0) { toast('Ingresa las onzas iniciales'); return; }
   try {
     await api('PUT', '/config', { key: 'tasa_dolar', value: String(tasa) });
     await api('PUT', '/config', { key: 'chicha_inicial_onzas', value: String(onzas) });
-    await api('PUT', '/config', { key: 'lugar_actual', value: lugar });
+    await api('PUT', '/config', { key: 'punto_actual', value: punto });
     chichaVendidoHoy = 0;
     diaCerradoHoy = false;
-    if (lugar) {
+    if (punto) {
       const config = await api('GET', '/config');
-      const lugares = config.lugares_usados ? JSON.parse(config.lugares_usados) : [];
-      if (!lugares.includes(lugar)) {
-        lugares.push(lugar);
-        await api('PUT', '/config', { key: 'lugares_usados', value: JSON.stringify(lugares) });
+      const puntos = config.puntos_usados ? JSON.parse(config.puntos_usados) : config.lugares_usados ? JSON.parse(config.lugares_usados) : [];
+      if (!puntos.includes(punto)) {
+        puntos.push(punto);
+        await api('PUT', '/config', { key: 'puntos_usados', value: JSON.stringify(puntos) });
       }
     }
-    toast('Dia iniciado: ' + onzas + ' oz - Tasa: Bs ' + tasa.toFixed(2) + (lugar ? ' - ' + lugar : ''));
+    toast('Dia iniciado: ' + onzas + ' oz - Tasa: Bs ' + tasa.toFixed(2) + (punto ? ' - ' + punto : ''));
     cerrarModal('modalInicioDia');
-    state.config.tasa_dolar = String(tasa);
-    state.config.lugar_actual = lugar;
+state.config.tasa_dolar = String(tasa);
+    state.config.punto_actual = lugar;
     window.renderAll();
   } catch (e) { toast('Error: ' + e.message); }
 }
@@ -487,7 +487,7 @@ export async function confirmarVentaUnidad() {
   body.moneda = monedaSeleccionada;
   body.metodo_pago = metodoPagoSeleccionado;
   body.vendedor_id = getVendedorActivo();
-  body.lugar = state.config.lugar_actual || '';
+  body.lugar = state.config.punto_actual || state.config.lugar_actual || '';
   const cid = document.getElementById('modalClienteUnidad').value;
   if (cid) body.cliente_id = cid;
   try {
@@ -546,7 +546,7 @@ export async function confirmarVentaCarrito() {
     moneda: monedaSeleccionada,
     metodo_pago: metodoPagoSeleccionado,
     vendedor_id: getVendedorActivo(),
-    lugar: state.config.lugar_actual || '',
+    lugar: state.config.punto_actual || state.config.lugar_actual || '',
     cliente_id: clienteId || null,
   };
   try {

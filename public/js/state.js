@@ -3,6 +3,7 @@ export const state = {
   tamanos: [],
   otrosProductos: [],
   vendedores: [],
+  puntos: [],
   ventaPendiente: null,
   clienteEditId: null,
   inventarioEditId: null,

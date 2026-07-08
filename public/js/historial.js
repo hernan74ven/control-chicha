@@ -76,14 +76,14 @@ function renderHistorial(ventas, dias) {
   ventas.forEach(v => {
     const vendedor = v.vendedor_nombre ? ' - ' + v.vendedor_nombre : '';
     const cliente = v.cliente_nombre ? ' - ' + v.cliente_nombre : '';
-    const lugar = v.lugar ? ' ' + v.lugar : '';
+    const punto = v.lugar ? ' ' + v.lugar : '';
     const pagoLabel = iconoPago(v.moneda, v.metodo_pago);
     const monedaLabel = v.moneda === 'USD' ? 'USD' : 'Bs';
     html += `<div class="history-item">
       <div class="hi-left">
         <div class="hi-time">${fmtDate(v.creado_en)} ${fmtTime(v.creado_en)}</div>
         <div class="hi-name">${v.producto_nombre}</div>
-        <div class="hi-meta">${pagoLabel} ${monedaLabel}${vendedor}${cliente}${lugar}</div>
+        <div class="hi-meta">${pagoLabel} ${monedaLabel}${vendedor}${cliente}${punto}</div>
       </div>
       <div class="hi-right">
         <div class="hi-usd">$${fmtCurrency(v.precio_usd)}</div>

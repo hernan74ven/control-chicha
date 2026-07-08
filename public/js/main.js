@@ -36,6 +36,7 @@ import {
   agregarTamano, actualizarTamano, eliminarTamano,
   agregarOtroProducto, actualizarOtroProducto, eliminarOtroProducto,
   agregarVendedor, actualizarVendedor, eliminarVendedor,
+  agregarPunto, actualizarPunto, eliminarPunto,
 } from './config.js';
 
 // ---- Tab navigation ----
@@ -70,16 +71,18 @@ function renderAll() {
 // ---- Init ----
 async function init() {
   try {
-    const [config, tamanos, otrosProductos, vendedores] = await Promise.all([
+    const [config, tamanos, otrosProductos, vendedores, puntos] = await Promise.all([
       api('GET', '/config'),
       api('GET', '/tamanos'),
       api('GET', '/otros-productos'),
       api('GET', '/vendedores'),
+      api('GET', '/puntos'),
     ]);
     state.config = config;
     state.tamanos = tamanos;
     state.otrosProductos = otrosProductos;
     state.vendedores = vendedores;
+    state.puntos = puntos;
   } catch (e) {
     console.error('Error al cargar datos:', e);
     toast('Error al conectar con el servidor');
@@ -90,7 +93,8 @@ async function init() {
   setTimeout(() => {
     const tasa = parseFloat(state.config.tasa_dolar || '0');
     const onzas = parseFloat(state.config.chicha_inicial_onzas || '0');
-    if (tasa <= 0 || onzas <= 0) {
+    const punto = state.config.punto_actual || state.config.lugar_actual || '';
+    if (tasa <= 0 || onzas <= 0 || !punto) {
       mostrarInicioDia();
     }
   }, 500);
@@ -179,6 +183,9 @@ window.eliminarOtroProducto = eliminarOtroProducto;
 window.agregarVendedor = agregarVendedor;
 window.actualizarVendedor = actualizarVendedor;
 window.eliminarVendedor = eliminarVendedor;
+window.agregarPunto = agregarPunto;
+window.actualizarPunto = actualizarPunto;
+window.eliminarPunto = eliminarPunto;
 
 // ---- Start ----
 document.addEventListener('DOMContentLoaded', init);

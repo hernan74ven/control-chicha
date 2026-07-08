@@ -708,7 +708,7 @@ router.delete('/receta/ingredientes/:id', async (req, res) => {
 // ---- BACKUP (exportar datos a JSON) ----
 router.post('/backup', async (req, res) => {
   try {
-    const collections = ['config', 'tamanos', 'otros_productos', 'vendedores', 'clientes', 'ventas', 'inventario', 'inventario_movimientos', 'receta_ingredientes'];
+    const collections = ['config', 'tamanos', 'otros_productos', 'vendedores', 'clientes', 'ventas', 'inventario', 'inventario_movimientos', 'receta_ingredientes', 'puntos'];
     const backup = {};
     for (const name of collections) {
       const snap = await db().collection(name).get();
@@ -725,7 +725,7 @@ router.post('/backup', async (req, res) => {
 // ---- DIAS (registro de cierre de día) ----
 router.post('/dias/cerrar', async (req, res) => {
   try {
-    const { fecha, ventas_count, total_usd, total_ves } = req.body;
+    const { fecha, ventas_count, total_usd, total_ves, usd_efectivo, chicha_onzas, chicha_ventas } = req.body;
     if (!fecha) return jsonError(res, 'Fecha requerida');
     await db().collection('dias').doc(fecha).set({
       fecha,
@@ -733,6 +733,9 @@ router.post('/dias/cerrar', async (req, res) => {
       ventas_count: ventas_count || 0,
       total_usd: total_usd || 0,
       total_ves: total_ves || 0,
+      usd_efectivo: usd_efectivo || 0,
+      chicha_onzas: chicha_onzas || 0,
+      chicha_ventas: chicha_ventas || 0,
       cerrado_en: new Date().toISOString()
     });
     jsonOk(res, { ok: true });
@@ -766,6 +769,53 @@ router.get('/dias', async (req, res) => {
     jsonOk(res, result);
   } catch (e) {
     jsonError(res, 'Error al leer días', 500);
+  }
+});
+
+// ---- PUNTOS DE VENTA ----
+router.get('/puntos', async (req, res) => {
+  try {
+    const snapshot = await db().collection('puntos').get();
+    const result = [];
+    snapshot.forEach(doc => result.push({ id: doc.id, ...doc.data() }));
+    jsonOk(res, result);
+  } catch (e) {
+    jsonError(res, 'Error al leer puntos', 500);
+  }
+});
+
+router.post('/puntos', async (req, res) => {
+  try {
+    const { nombre } = req.body;
+    if (!nombre) return jsonError(res, 'Falta nombre');
+    const docRef = db().collection('puntos').doc();
+    const data = { nombre, activo: 1, creado_en: new Date().toISOString() };
+    await docRef.set(data);
+    jsonOk(res, { id: docRef.id, ...data });
+  } catch (e) {
+    jsonError(res, 'Error al crear punto', 500);
+  }
+});
+
+router.put('/puntos/:id', async (req, res) => {
+  try {
+    const { nombre, activo } = req.body;
+    const update = {};
+    if (nombre !== undefined) update.nombre = nombre;
+    if (activo !== undefined) update.activo = activo ? 1 : 0;
+    if (Object.keys(update).length > 0) await db().collection('puntos').doc(req.params.id).update(update);
+    jsonOk(res, { updated: true });
+  } catch (e) {
+    jsonError(res, 'Error al actualizar punto', 500);
+  }
+});
+
+router.delete('/puntos/:id', async (req, res) => {
+  try {
+    await db().collection('puntos').doc(req.params.id).delete();
+    jsonOk(res, { deleted: true });
+  } catch (e) {
+    jsonError(res, 'Error al eliminar punto', 500);
   }
 });
 

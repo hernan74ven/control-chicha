@@ -30,6 +30,15 @@ export function renderConfig() {
     </div>
   `).join('') || '<div style="color:var(--text-light);font-size:0.8rem;padding:8px 0;">Sin productos</div>';
 
+  let puntosHtml = (state.puntos || []).map(p => `
+    <div class="config-item">
+      <div class="ci-header"><span>${p.nombre}</span><button class="btn btn-danger btn-sm" onclick="window.eliminarPunto('${p.id}')">Eliminar</button></div>
+      <div class="config-row">
+        <input class="cname" type="text" value="${p.nombre}" placeholder="Nombre" onchange="window.actualizarPunto('${p.id}',this.value)">
+      </div>
+    </div>
+  `).join('') || '<div style="color:var(--text-light);font-size:0.8rem;padding:8px 0;">Sin puntos</div>';
+
   let vendedoresHtml = state.vendedores.map(v => `
     <div class="config-item">
       <div class="ci-header"><span>${v.nombre}</span><button class="btn btn-danger btn-sm" onclick="window.eliminarVendedor('${v.id}')">Eliminar</button></div>
@@ -57,6 +66,10 @@ export function renderConfig() {
     <div class="config-section">
       <h3>Otros Productos <button class="btn btn-sm btn-primary" onclick="window.agregarOtroProducto()">+</button></h3>
       <div class="config-card">${prodHtml}</div>
+    </div>
+    <div class="config-section">
+      <h3>Puntos de Venta <button class="btn btn-sm btn-primary" onclick="window.agregarPunto()">+</button></h3>
+      <div class="config-card">${puntosHtml}</div>
     </div>
     <div class="config-section">
       <h3>Vendedores <button class="btn btn-sm btn-primary" onclick="window.agregarVendedor()">+</button></h3>
@@ -157,6 +170,32 @@ export async function actualizarVendedor(id, nombre) {
     await api('PUT', '/vendedores/' + id, { nombre });
     state.vendedores = await api('GET', '/vendedores');
   } catch (e) { /* ignore */ }
+}
+
+export async function agregarPunto() {
+  try {
+    await api('POST', '/puntos', { nombre: 'Nuevo punto' });
+    state.puntos = await api('GET', '/puntos');
+    renderConfig();
+    toast('Punto agregado');
+  } catch (e) { toast('Error'); }
+}
+
+export async function actualizarPunto(id, nombre) {
+  try {
+    await api('PUT', '/puntos/' + id, { nombre });
+    state.puntos = await api('GET', '/puntos');
+  } catch (e) { /* ignore */ }
+}
+
+export async function eliminarPunto(id) {
+  if (!confirm('Eliminar este punto de venta?')) return;
+  try {
+    await api('DELETE', '/puntos/' + id);
+    state.puntos = await api('GET', '/puntos');
+    renderConfig();
+    toast('Punto eliminado');
+  } catch (e) { toast('Error'); }
 }
 
 export async function eliminarVendedor(id) {
