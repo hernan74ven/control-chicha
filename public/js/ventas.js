@@ -346,11 +346,21 @@ export async function cerrarDia() {
     const ventasHoy = await api('GET', `/ventas?desde=${hoy}&hasta=${hoy}`);
     const total_usd = ventasHoy.reduce((s, v) => s + v.precio_usd, 0);
     const total_ves = ventasHoy.reduce((s, v) => s + v.precio_ves, 0);
+    let chicha_onzas = 0, chicha_ventas = 0;
+    ventasHoy.forEach(v => {
+      if (v.tipo_producto === 'chicha') {
+        chicha_ventas++;
+        const tam = buscarTamano(v.producto_id);
+        chicha_onzas += tam ? (tam.onzaxvaso || 0) : 0;
+      }
+    });
     await api('POST', '/dias/cerrar', {
       fecha: hoy,
       ventas_count: ventasHoy.length,
       total_usd,
-      total_ves
+      total_ves,
+      chicha_onzas,
+      chicha_ventas
     });
     await api('PUT', '/config', { key: 'chicha_inicial_onzas', value: '0' });
     chichaVendidoHoy = 0;
@@ -380,7 +390,10 @@ async function reabrirDia() {
     const dias = await api('GET', `/dias?desde=${hoy}&hasta=${hoy}`);
     if (dias.length > 0) {
       const d = dias[0];
-      info = ` (${d.ventas_count} ventas, $${fmtCurrency(d.total_usd)}${d.total_ves > 0 ? ', ' + fmtVes(d.total_ves) : ''})`;
+      let ch = '';
+      if (d.chicha_ventas) ch += ` 🥤${d.chicha_ventas}`;
+      if (d.chicha_onzas) ch += ` (${fmtCurrency(d.chicha_onzas)} oz)`;
+      info = ` (${d.ventas_count} ventas${ch}, $${fmtCurrency(d.total_usd)}${d.total_ves > 0 ? ', ' + fmtVes(d.total_ves) : ''})`;
     }
   } catch (_) {}
   if (!confirm(`⚠️ REABRIR DÍA DE EMERGENCIA\n\nEste día ya fue cerrado${info}. ¿Estás seguro de querer reabrirlo?`)) return;
