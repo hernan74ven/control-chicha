@@ -298,11 +298,14 @@ export async function renderChichaStatus() {
 
 export async function mostrarInicioDia() {
   try {
-    const config = await api('GET', '/config');
+    const [config, puntos] = await Promise.all([
+      api('GET', '/config'),
+      api('GET', '/puntos'),
+    ]);
     state.config = config;
-    const puntos = config.puntos_usados ? JSON.parse(config.puntos_usados) : config.lugares_usados ? JSON.parse(config.lugares_usados) : [];
+    state.puntos = puntos;
     const dl = document.getElementById('listaPuntos');
-    dl.innerHTML = puntos.map(p => `<option value="${p}">`).join('');
+    dl.innerHTML = puntos.map(p => `<option value="${p.nombre}">`).join('');
   } catch (e) { /* ignore */ }
   document.getElementById('inicioTasa').value = state.config.tasa_dolar || '';
   document.getElementById('inicioOnzas').value = state.config.receta_total_onzas || '720';
