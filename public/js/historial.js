@@ -57,10 +57,13 @@ function renderHistorial(ventas, dias) {
     if (d.chicha_onzas) s += ` (${fmtCurrency(d.chicha_onzas)} oz)`;
     return s;
   }
+  function usdEfInfo(d) {
+    return d.usd_efectivo ? ` 💵$${fmtCurrency(d.usd_efectivo)} efec` : '';
+  }
 
   if (ventas.length === 0 && dias.length > 0) {
     const d = dias[0];
-    listEl.innerHTML = `<div class="empty-state">✅ Día cerrado — ${d.ventas_count} ventas${chichaInfo(d)}, $${fmtCurrency(d.total_usd)}${d.total_ves > 0 ? ' · ' + fmtVes(d.total_ves) : ''}</div>`;
+    listEl.innerHTML = `<div class="empty-state">✅ Día cerrado — ${d.ventas_count} ventas${chichaInfo(d)}${usdEfInfo(d)}, $${fmtCurrency(d.total_usd)}${d.total_ves > 0 ? ' · ' + fmtVes(d.total_ves) : ''}</div>`;
     return;
   }
 
@@ -92,7 +95,7 @@ function renderHistorial(ventas, dias) {
 
   if (dias.length > 0) {
     const d = dias[0];
-    html += `<div class="day-closed-badge">✅ Día cerrado — ${d.ventas_count} ventas${chichaInfo(d)} · $${fmtCurrency(d.total_usd)}${d.total_ves > 0 ? ' · ' + fmtVes(d.total_ves) : ''}</div>`;
+    html += `<div class="day-closed-badge">✅ Día cerrado — ${d.ventas_count} ventas${chichaInfo(d)}${usdEfInfo(d)} · $${fmtCurrency(d.total_usd)}${d.total_ves > 0 ? ' · ' + fmtVes(d.total_ves) : ''}</div>`;
   }
 
   listEl.innerHTML = html;
