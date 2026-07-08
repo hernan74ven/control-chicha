@@ -6,6 +6,7 @@ import { trackVenta } from './analytics.js';
 let chichaInicialOnzas = 0;
 let chichaVendidoHoy = 0;  // contador local para evitar depender de consultas a Firestore
 let diaCerradoHoy = false;
+let _reopenTimer = null;
 export let monedaSeleccionada = 'USD';
 export let metodoPagoSeleccionado = 'efectivo';
 let vendedorActivo = null;
@@ -264,10 +265,10 @@ export async function renderChichaStatus() {
     el.innerHTML = diaCerradoHoy
       ? `<div class="cs-header">
           <span class="cs-label">Chicha en envase</span>
-          <span style="font-size:0.72rem;color:var(--danger);font-weight:600;">Ya cerró el día</span>
+          <span class="cs-closed-label" onmousedown="window._iniciarReapertura()" onmouseup="window._cancelarReapertura()" onmouseleave="window._cancelarReapertura()" ontouchstart="window._iniciarReapertura()" ontouchend="window._cancelarReapertura()" ontouchcancel="window._cancelarReapertura()">Ya cerró el día</span>
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-          <span style="font-size:0.75rem;color:var(--text-light);">Hoy ya se trabajó y se cerró</span>
+          <span style="font-size:0.75rem;color:var(--text-light);">Mantén presionado "Ya cerró el día" 6 seg para reabrir</span>
         </div>`
       : `<div class="cs-header">
           <span class="cs-label">Chicha en envase</span>
@@ -358,6 +359,38 @@ export async function cerrarDia() {
     cerrarModal('modalChichaAgotada');
     window.renderAll();
   } catch (e) { toast('Error'); }
+}
+
+// ---- Long-press reabrir día ----
+export function _iniciarReapertura() {
+  if (_reopenTimer) return;
+  _reopenTimer = setTimeout(() => {
+    _reopenTimer = null;
+    reabrirDia();
+  }, 6000);
+}
+export function _cancelarReapertura() {
+  if (_reopenTimer) { clearTimeout(_reopenTimer); _reopenTimer = null; }
+}
+
+async function reabrirDia() {
+  const hoy = todayStr();
+  let info = '';
+  try {
+    const dias = await api('GET', `/dias?desde=${hoy}&hasta=${hoy}`);
+    if (dias.length > 0) {
+      const d = dias[0];
+      info = ` (${d.ventas_count} ventas, $${fmtCurrency(d.total_usd)}${d.total_ves > 0 ? ', ' + fmtVes(d.total_ves) : ''})`;
+    }
+  } catch (_) {}
+  if (!confirm(`⚠️ REABRIR DÍA DE EMERGENCIA\n\nEste día ya fue cerrado${info}. ¿Estás seguro de querer reabrirlo?`)) return;
+  if (!confirm('⚠️ CONFIRMACIÓN FINAL: ¿Reabrir el día? Se borrará el registro de cierre y podrás vender nuevamente.')) return;
+  try {
+    await api('DELETE', '/dias/' + hoy);
+    diaCerradoHoy = false;
+    toast('Día reabierto — inicia el día para vender');
+    mostrarInicioDia();
+  } catch (e) { toast('Error al reabrir'); }
 }
 
 export function guardarVendedorActivo() {

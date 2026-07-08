@@ -12,6 +12,7 @@ import {
   iniciarVenta, confirmarVentaUnidad, inicializarChichaVendido, sincronizarChichaVendido,
   confirmarVentaCarrito,
   iniciarLoteChicha, reabastecerChicha,
+  _iniciarReapertura, _cancelarReapertura,
 } from './ventas.js';
 import { cargarHistorial, eliminarVenta } from './historial.js';
 import { cargarReportes } from './reportes.js';
@@ -134,6 +135,8 @@ window.confirmarVentaUnidad = confirmarVentaUnidad;
 window.confirmarVentaCarrito = confirmarVentaCarrito;
 window.iniciarLoteChicha = iniciarLoteChicha;
 window.reabastecerChicha = reabastecerChicha;
+window._iniciarReapertura = _iniciarReapertura;
+window._cancelarReapertura = _cancelarReapertura;
 
 window.cargarHistorial = cargarHistorial;
 window.eliminarVenta = eliminarVenta;

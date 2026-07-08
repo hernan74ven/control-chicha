@@ -741,6 +741,15 @@ router.post('/dias/cerrar', async (req, res) => {
   }
 });
 
+router.delete('/dias/:fecha', async (req, res) => {
+  try {
+    await db().collection('dias').doc(req.params.fecha).delete();
+    jsonOk(res, { deleted: true });
+  } catch (e) {
+    jsonError(res, 'Error al eliminar día', 500);
+  }
+});
+
 router.get('/dias', async (req, res) => {
   try {
     const { desde, hasta } = req.query;
