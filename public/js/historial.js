@@ -7,6 +7,7 @@ export async function cargarHistorial() {
   const desde = document.getElementById('filterDesde').value || todayStr();
   const hasta = document.getElementById('filterHasta').value || todayStr();
   const vendedor = document.getElementById('filterVendedor').value;
+  const punto = document.getElementById('filterPunto').value;
   let url = '/ventas?desde=' + desde + '&hasta=' + hasta;
   if (vendedor) url += '&vendedor_id=' + vendedor;
 
@@ -15,7 +16,9 @@ export async function cargarHistorial() {
       api('GET', url),
       api('GET', `/dias?desde=${desde}&hasta=${hasta}`)
     ]);
-    renderHistorial(ventas, dias);
+    const ventasFiltradas = punto ? ventas.filter(v => v.lugar === punto) : ventas;
+    const diasFiltrados = punto ? dias.filter(d => d.punto === punto) : dias;
+    renderHistorial(ventasFiltradas, diasFiltrados);
   } catch (e) {
     toast('Error al cargar historial');
   }
@@ -33,6 +36,9 @@ function renderHistorial(ventas, dias) {
   const selV = document.getElementById('filterVendedor');
   selV.innerHTML = '<option value="">Todos los vendedores</option>' +
     state.vendedores.map(v => `<option value="${v.id}">${v.nombre}</option>`).join('');
+  const selP = document.getElementById('filterPunto');
+  selP.innerHTML = '<option value="">Todos los puntos</option>' +
+    (state.puntos || []).map(p => `<option value="${p.nombre}">${p.nombre}</option>`).join('');
 
   const totalUsd = ventas.reduce((s, x) => s + x.precio_usd, 0);
   const totalVes = ventas.reduce((s, x) => s + x.precio_ves, 0);

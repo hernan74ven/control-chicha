@@ -51,6 +51,8 @@
     <span class="rate-badge" id="rateBadge">Tasa: --</span>
   </div>
 </header>
+<div id="puntoSelector" class="punto-selector"></div>
+</header>
 
 <!-- Main Content -->
 <main id="mainContent">
@@ -76,6 +78,7 @@
       <input type="date" id="filterDesde" onchange="cargarHistorial()">
       <input type="date" id="filterHasta" onchange="cargarHistorial()">
       <select id="filterVendedor" onchange="cargarHistorial()"><option value="">Todos</option></select>
+      <select id="filterPunto" onchange="cargarHistorial()"><option value="">Todos los puntos</option></select>
     </div>
     <div id="historialTotals" class="historial-totals"></div>
     <div id="historialList"></div>
@@ -91,6 +94,7 @@
         <option value="mes">Este mes</option>
         <option value="todo">Todo</option>
       </select>
+      <select id="reportePunto" onchange="cargarReportes()"><option value="">Todos los puntos</option></select>
     </div>
     <div id="reportesContent"></div>
   </section>

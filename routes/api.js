@@ -725,10 +725,12 @@ router.post('/backup', async (req, res) => {
 // ---- DIAS (registro de cierre de día) ----
 router.post('/dias/cerrar', async (req, res) => {
   try {
-    const { fecha, ventas_count, total_usd, total_ves, usd_efectivo, chicha_onzas, chicha_ventas } = req.body;
+    const { fecha, punto, ventas_count, total_usd, total_ves, usd_efectivo, chicha_onzas, chicha_ventas } = req.body;
     if (!fecha) return jsonError(res, 'Fecha requerida');
-    await db().collection('dias').doc(fecha).set({
+    const docId = fecha + (punto ? '_' + punto : '');
+    await db().collection('dias').doc(docId).set({
       fecha,
+      punto: punto || '',
       estado: 'cerrado',
       ventas_count: ventas_count || 0,
       total_usd: total_usd || 0,
@@ -760,12 +762,12 @@ router.get('/dias', async (req, res) => {
     const result = [];
     snapshot.forEach(doc => {
       const data = doc.data();
-      const f = data.fecha || doc.id;
+      const f = data.fecha || doc.id.slice(0, 10);
       if (desde && f < desde) return;
       if (hasta && f > hasta) return;
       result.push({ id: doc.id, ...data });
     });
-    result.sort((a, b) => b.fecha.localeCompare(a.fecha));
+    result.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
     jsonOk(res, result);
   } catch (e) {
     jsonError(res, 'Error al leer días', 500);

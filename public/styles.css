@@ -97,6 +97,24 @@ header h1 .logo-icon {
   backdrop-filter: blur(4px);
 }
 
+/* Punto selector */
+.punto-selector {
+  text-align: center;
+  padding: 4px 16px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  margin-top: var(--header-height);
+}
+.punto-selector select {
+  font-size: 0.82rem;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  max-width: 100%;
+}
+
 /* Bottom Nav */
 nav {
   position: fixed;

@@ -150,6 +150,33 @@ export function renderHeader() {
   document.getElementById('rateBadge').textContent = t > 0
     ? 'Bs ' + t.toFixed(2) + (punto ? ' ' + punto : '')
     : 'Configurar tasa';
+  const sel = document.getElementById('puntoSelector');
+  const puntos = state.puntos || [];
+  const activo = state.config.punto_actual || state.config.lugar_actual || '';
+  sel.innerHTML = puntos.length > 0
+    ? `<select id="puntoSelect" onchange="window.cambiarPunto(this.value)" style="font-size:0.78rem;padding:4px 8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--card);color:var(--text);">
+        ${puntos.map(p => `<option value="${p.nombre}" ${p.nombre === activo ? 'selected' : ''}>${p.nombre}</option>`).join('')}
+      </select>`
+    : '';
+}
+
+export async function cambiarPunto(nombre) {
+  if (!nombre || nombre === (state.config.punto_actual || '')) return;
+  // Load per-punto config
+  const prefijo = 'punto_' + nombre + '_';
+  const config = await api('GET', '/config');
+  const tasaPunto = parseFloat(config[prefijo + 'tasa_dolar']) || parseFloat(config.tasa_dolar) || 0;
+  const onzasPunto = parseFloat(config[prefijo + 'chicha_inicial_onzas']) || 0;
+  // Update config
+  await api('PUT', '/config', { key: 'punto_actual', value: nombre });
+  if (tasaPunto > 0) await api('PUT', '/config', { key: 'tasa_dolar', value: String(tasaPunto) });
+  if (onzasPunto > 0) await api('PUT', '/config', { key: 'chicha_inicial_onzas', value: String(onzasPunto) });
+  state.config.punto_actual = nombre;
+  state.config.tasa_dolar = String(tasaPunto);
+  state.config.chicha_inicial_onzas = String(onzasPunto);
+  await inicializarChichaVendido();
+  window.renderAll();
+  toast('Punto: ' + nombre);
 }
 
 export async function renderVender() {
@@ -323,6 +350,12 @@ export async function comenzarDia() {
     await api('PUT', '/config', { key: 'tasa_dolar', value: String(tasa) });
     await api('PUT', '/config', { key: 'chicha_inicial_onzas', value: String(onzas) });
     await api('PUT', '/config', { key: 'punto_actual', value: punto });
+    // Save per-punto config
+    if (punto) {
+      const prefijo = 'punto_' + punto + '_';
+      await api('PUT', '/config', { key: prefijo + 'tasa_dolar', value: String(tasa) });
+      await api('PUT', '/config', { key: prefijo + 'chicha_inicial_onzas', value: String(onzas) });
+    }
     chichaVendidoHoy = 0;
     diaCerradoHoy = false;
     if (punto) {
@@ -346,12 +379,14 @@ export async function cerrarDia() {
   if (!confirm('⚠️ CONFIRMACIÓN FINAL: ¿Cerrar el día ahora? Se reseteará la chicha y empezarás un nuevo día.')) return;
   try {
     const hoy = todayStr();
+    const punto = getPuntoActual();
     const ventasHoy = await api('GET', `/ventas?desde=${hoy}&hasta=${hoy}`);
-    const total_usd = ventasHoy.reduce((s, v) => s + v.precio_usd, 0);
-    const total_ves = ventasHoy.reduce((s, v) => s + v.precio_ves, 0);
-    const usd_efectivo = ventasHoy.filter(v => v.moneda === 'USD' && v.metodo_pago === 'efectivo').reduce((s, v) => s + v.precio_usd, 0);
+    const ventasPunto = punto ? ventasHoy.filter(v => v.lugar === punto) : ventasHoy;
+    const total_usd = ventasPunto.reduce((s, v) => s + v.precio_usd, 0);
+    const total_ves = ventasPunto.reduce((s, v) => s + v.precio_ves, 0);
+    const usd_efectivo = ventasPunto.filter(v => v.moneda === 'USD' && v.metodo_pago === 'efectivo').reduce((s, v) => s + v.precio_usd, 0);
     let chicha_onzas = 0, chicha_ventas = 0;
-    ventasHoy.forEach(v => {
+    ventasPunto.forEach(v => {
       if (v.tipo_producto === 'chicha') {
         chicha_ventas++;
         const tam = buscarTamano(v.producto_id);
@@ -360,7 +395,8 @@ export async function cerrarDia() {
     });
     await api('POST', '/dias/cerrar', {
       fecha: hoy,
-      ventas_count: ventasHoy.length,
+      punto: punto,
+      ventas_count: ventasPunto.length,
       total_usd,
       total_ves,
       usd_efectivo,
@@ -368,6 +404,7 @@ export async function cerrarDia() {
       chicha_ventas
     });
     await api('PUT', '/config', { key: 'chicha_inicial_onzas', value: '0' });
+    if (punto) await api('PUT', '/config', { key: 'punto_' + punto + '_chicha_inicial_onzas', value: '0' });
     chichaVendidoHoy = 0;
     diaCerradoHoy = true;
     toast('Dia cerrado');
@@ -390,11 +427,13 @@ export function _cancelarReapertura() {
 
 async function reabrirDia() {
   const hoy = todayStr();
+  const punto = getPuntoActual();
   let info = '';
+  let docId = hoy + (punto ? '_' + punto : '');
   try {
     const dias = await api('GET', `/dias?desde=${hoy}&hasta=${hoy}`);
-    if (dias.length > 0) {
-      const d = dias[0];
+    const d = dias.find(x => x.id === docId || (!punto && x.fecha === hoy));
+    if (d) {
       let ch = '';
       if (d.chicha_ventas) ch += ` 🥤${d.chicha_ventas}`;
       if (d.chicha_onzas) ch += ` (${fmtCurrency(d.chicha_onzas)} oz)`;
@@ -405,7 +444,7 @@ async function reabrirDia() {
   if (!confirm(`⚠️ REABRIR DÍA DE EMERGENCIA\n\nEste día ya fue cerrado${info}. ¿Estás seguro de querer reabrirlo?`)) return;
   if (!confirm('⚠️ CONFIRMACIÓN FINAL: ¿Reabrir el día? Se borrará el registro de cierre y podrás vender nuevamente.')) return;
   try {
-    await api('DELETE', '/dias/' + hoy);
+    await api('DELETE', '/dias/' + docId);
     diaCerradoHoy = false;
     toast('Día reabierto — inicia el día para vender');
     mostrarInicioDia();
@@ -586,17 +625,24 @@ function checkDiaActivo() {
   return false;
 }
 
+function getPuntoActual() {
+  return state.config.punto_actual || state.config.lugar_actual || '';
+}
+
 export async function inicializarChichaVendido() {
   try {
     const hoy = todayStr();
+    const punto = getPuntoActual();
+    let urlVentas = `/ventas?desde=${hoy}&hasta=${hoy}`;
+    let urlDias = `/dias?desde=${hoy}&hasta=${hoy}`;
     const [ventasHoy, dias] = await Promise.all([
-      api('GET', `/ventas?desde=${hoy}&hasta=${hoy}`),
-      api('GET', `/dias?desde=${hoy}&hasta=${hoy}`)
+      api('GET', urlVentas),
+      api('GET', urlDias)
     ]);
     diaCerradoHoy = dias.length > 0 && dias[0].estado === 'cerrado';
     chichaVendidoHoy = 0;
     ventasHoy.forEach(v => {
-      if (v.tipo_producto === 'chicha') {
+      if (v.tipo_producto === 'chicha' && (!punto || v.lugar === punto)) {
         const tam = buscarTamano(v.producto_id);
         chichaVendidoHoy += tam ? (tam.onzaxvaso || 0) : 0;
       }
