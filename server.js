@@ -25,13 +25,15 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
+// Trust proxy for Railway/Render
+app.set('trust proxy', 1);
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 200,
   message: { ok: false, error: 'Demasiadas peticiones. Intenta en 1 minuto.' },
-  standardHeaders: true,
-  legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });
 app.use('/api', limiter);
 
@@ -39,6 +41,7 @@ const strictLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 20,
   message: { ok: false, error: 'Demasiadas peticiones destructivas. Espera 1 minuto.' },
+  validate: { xForwardedForHeader: false },
 });
 app.use('/api', (req, res, next) => {
   if (req.method === 'DELETE' || req.method === 'PUT') {
