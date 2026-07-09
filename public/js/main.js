@@ -64,8 +64,8 @@ function switchTab(tab) {
 }
 
 // ---- Render all ----
-function renderAll() {
-  renderHeader();
+async function renderAll() {
+  await renderHeader();
   renderVender();
 }
 

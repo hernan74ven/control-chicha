@@ -141,7 +141,7 @@ export function calcVes(usd) {
   return t > 0 ? usd * t : 0;
 }
 
-export function renderHeader() {
+export async function renderHeader() {
   const now = new Date();
   document.getElementById('headerDate').textContent =
     now.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -151,13 +151,16 @@ export function renderHeader() {
     ? 'Bs ' + t.toFixed(2) + (punto ? ' ' + punto : '')
     : 'Configurar tasa';
   const sel = document.getElementById('puntoSelector');
-  const puntos = state.puntos || [];
-  const activo = state.config.punto_actual || state.config.lugar_actual || '';
-  sel.innerHTML = puntos.length > 0
-    ? `<select id="puntoSelect" onchange="window.cambiarPunto(this.value)" style="font-size:0.78rem;padding:4px 8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--card);color:var(--text);">
-        ${puntos.map(p => `<option value="${p.nombre}" ${p.nombre === activo ? 'selected' : ''}>${p.nombre}</option>`).join('')}
-      </select>`
-    : '';
+  try {
+    const puntos = await api('GET', '/puntos');
+    state.puntos = puntos;
+    const activo = state.config.punto_actual || state.config.lugar_actual || '';
+    sel.innerHTML = puntos.length > 0
+      ? `<select id="puntoSelect" onchange="window.cambiarPunto(this.value)" style="font-size:0.78rem;padding:4px 8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--card);color:var(--text);">
+          ${puntos.map(p => `<option value="${p.nombre}" ${p.nombre === activo ? 'selected' : ''}>${p.nombre}</option>`).join('')}
+        </select>`
+      : '';
+  } catch (e) { sel.innerHTML = ''; }
 }
 
 export async function cambiarPunto(nombre) {
@@ -180,7 +183,7 @@ export async function cambiarPunto(nombre) {
 }
 
 export async function renderVender() {
-  renderHeader();
+  await renderHeader();
   const statsEl = document.getElementById('statsRow');
   const topEl = document.getElementById('venderTopBar');
   const prodEl = document.getElementById('productsContainer');

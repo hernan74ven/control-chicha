@@ -3,8 +3,8 @@ import { api } from './api.js';
 import { toast, fmtCurrency } from './ui.js';
 import { renderHeader, renderVender, getTasa } from './ventas.js';
 
-export function renderConfig() {
-  renderHeader();
+export async function renderConfig() {
+  await renderHeader();
   const el = document.getElementById('configContent');
   const tasa = getTasa();
 
@@ -114,7 +114,7 @@ export async function actualizarTamano(id, field, value) {
     await api('PUT', '/tamanos/' + id, { [field]: value });
     state.tamanos = await api('GET', '/tamanos');
     renderVender();
-    renderHeader();
+    await renderHeader();
   } catch (e) { /* ignore */ }
 }
 
@@ -142,7 +142,7 @@ export async function actualizarOtroProducto(id, field, value) {
     await api('PUT', '/otros-productos/' + id, { [field]: value });
     state.otrosProductos = await api('GET', '/otros-productos');
     renderVender();
-    renderHeader();
+    await renderHeader();
   } catch (e) { /* ignore */ }
 }
 
