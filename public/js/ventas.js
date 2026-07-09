@@ -344,12 +344,13 @@ export async function mostrarInicioDia() {
     ]);
     state.config = config;
     state.puntos = puntos;
-    const dl = document.getElementById('listaPuntos');
-    dl.innerHTML = puntos.map(p => `<option value="${p.nombre}">`).join('');
+    const sel = document.getElementById('inicioPunto');
+    const actual = state.config.punto_actual || state.config.lugar_actual || '';
+    sel.innerHTML = '<option value="">Seleccionar punto...</option>' +
+      puntos.map(p => `<option value="${p.nombre}" ${p.nombre === actual ? 'selected' : ''}>${p.nombre}</option>`).join('');
   } catch (e) { /* ignore */ }
   document.getElementById('inicioTasa').value = state.config.tasa_dolar || '';
   document.getElementById('inicioOnzas').value = state.config.receta_total_onzas || '720';
-  document.getElementById('inicioPunto').value = state.config.punto_actual || state.config.lugar_actual || '';
   abrirModal('modalInicioDia');
 }
 
