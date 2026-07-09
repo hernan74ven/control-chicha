@@ -22,7 +22,7 @@ body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: var(--bg);
   color: var(--text);
-  padding-top: var(--header-height);
+  padding-top: calc(var(--header-height) + 38px);
   padding-bottom: var(--nav-height);
   min-height: 100vh;
   -webkit-tap-highlight-color: transparent;
