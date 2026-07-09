@@ -6,7 +6,7 @@ import {
   renderHeader, renderVender, renderChichaStatus,
   mostrarInicioDia, comenzarDia, cerrarDia,
   guardarVendedorActivo, getVendedorActivo,
-  seleccionarMoneda, seleccionarMetodoPago,
+  seleccionarMoneda, seleccionarMetodoPago, actualizarMixtoPagoMovil,
   toggleModoVarias,
   agregarAlCarrito, carritoSumar, carritoRestar, carritoEliminar, abrirCarrito,
   iniciarVenta, confirmarVentaUnidad, inicializarChichaVendido, sincronizarChichaVendido,
