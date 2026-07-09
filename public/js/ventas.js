@@ -120,6 +120,7 @@ export function renderCarrito() {
   const totalVes = calcVes(totalUsd);
   el.innerHTML = html;
   totalEl.innerHTML = `<strong>Total: $${fmtCurrency(totalUsd)}</strong>${totalVes > 0 ? ` | <strong>${fmtVes(totalVes)}</strong>` : ''}`;
+  totalEl.dataset.ves = totalVes;
 }
 
 // ---- CORE ----
@@ -258,6 +259,15 @@ export function extraerDesglose(pagoDesglose) {
       d.bs_efectivo.cant += p.cantidad;
       d.bs_efectivo.usd += p.total_usd;
       d.bs_efectivo.ves += p.total_ves;
+    } else if (p.metodo_pago === 'mixto') {
+      const ef = p.efectivo_bs || 0;
+      const pm = p.pagomovil_bs || 0;
+      d.bs_efectivo.cant += p.cantidad;
+      d.bs_efectivo.usd += p.total_usd * (ef / (ef + pm || 1));
+      d.bs_efectivo.ves += ef;
+      d.bs_pago_movil.cant += p.cantidad;
+      d.bs_pago_movil.usd += p.total_usd * (pm / (ef + pm || 1));
+      d.bs_pago_movil.ves += pm;
     } else {
       d.bs_pago_movil.cant += p.cantidad;
       d.bs_pago_movil.usd += p.total_usd;
@@ -479,18 +489,24 @@ export function seleccionarMoneda(mon) {
 
   const optPMUnidad = document.getElementById('optPagoMovilUnidad');
   const optPMCarrito = document.getElementById('optPagoMovilCarrito');
+  const optMixtoUnidad = document.getElementById('optMixtoUnidad');
+  const optMixtoCarrito = document.getElementById('optMixtoCarrito');
 
   if (mon === 'USD') {
     metodoPagoSeleccionado = 'efectivo';
-    if (optPMUnidad) optPMUnidad.classList.add('hidden');
-    if (optPMCarrito) optPMCarrito.classList.add('hidden');
+    [optPMUnidad, optPMCarrito, optMixtoUnidad, optMixtoCarrito].forEach(el => {
+      if (el) el.classList.add('hidden');
+    });
     document.querySelectorAll('#modalMetodoPago .mp-opt, #modalMetodoPagoCarrito .mp-opt').forEach(el => {
       el.classList.toggle('active', el.dataset.val === 'efectivo');
     });
   } else {
-    if (optPMUnidad) optPMUnidad.classList.remove('hidden');
-    if (optPMCarrito) optPMCarrito.classList.remove('hidden');
+    [optPMUnidad, optPMCarrito, optMixtoUnidad, optMixtoCarrito].forEach(el => {
+      if (el) el.classList.remove('hidden');
+    });
   }
+  document.getElementById('mixtoInputsUnidad')?.classList.add('hidden');
+  document.getElementById('mixtoInputsCarrito')?.classList.add('hidden');
 }
 
 export function seleccionarMetodoPago(mp) {
@@ -498,6 +514,23 @@ export function seleccionarMetodoPago(mp) {
   document.querySelectorAll('#modalMetodoPago .mp-opt, #modalMetodoPagoCarrito .mp-opt').forEach(el => {
     el.classList.toggle('active', el.dataset.val === mp);
   });
+  const show = mp === 'mixto';
+  document.getElementById('mixtoInputsUnidad')?.classList.toggle('hidden', !show);
+  document.getElementById('mixtoInputsCarrito')?.classList.toggle('hidden', !show);
+  if (show && monedaSeleccionada === 'VES') {
+    actualizarMixtoPagoMovil('unidad');
+    actualizarMixtoPagoMovil('carrito');
+  }
+}
+
+export function actualizarMixtoPagoMovil(tipo) {
+  const totalVes = tipo === 'unidad'
+    ? parseFloat(document.getElementById('modalProductoPrecio')?.dataset?.ves || '0')
+    : parseFloat(document.getElementById('carritoTotal')?.dataset?.ves || '0');
+  const ef = parseFloat(document.getElementById('mixtoEfectivo' + (tipo === 'unidad' ? 'Unidad' : 'Carrito'))?.value) || 0;
+  const pm = Math.max(0, totalVes - ef);
+  const span = document.getElementById('mixtoPagoMovil' + (tipo === 'unidad' ? 'Unidad' : 'Carrito'));
+  if (span) span.textContent = pm.toFixed(2).replace('.', ',');
 }
 
 export function iniciarVenta(tipo, id, nombre, precioUsd) {
@@ -512,10 +545,15 @@ export function iniciarVenta(tipo, id, nombre, precioUsd) {
     el.classList.toggle('active', el.dataset.val === 'efectivo');
   });
   document.getElementById('optPagoMovilUnidad').classList.add('hidden');
+  document.getElementById('optMixtoUnidad').classList.add('hidden');
+  document.getElementById('mixtoInputsUnidad')?.classList.add('hidden');
+  document.getElementById('mixtoInputsCarrito')?.classList.add('hidden');
   document.getElementById('modalProductoName').textContent = nombre;
   const v = calcVes(precioUsd);
-  document.getElementById('modalProductoPrecio').innerHTML =
+  const precioEl = document.getElementById('modalProductoPrecio');
+  precioEl.innerHTML =
     `<strong>$${fmtCurrency(precioUsd)}</strong>${v > 0 ? ` | <strong>${fmtVes(v)}</strong>` : ''}`;
+  precioEl.dataset.ves = v;
   const sel = document.getElementById('modalClienteUnidad');
   sel.innerHTML = '<option value="">Sin cliente</option>';
   api('GET', '/clientes').then(clientes => {
@@ -535,6 +573,12 @@ export async function confirmarVentaUnidad() {
   body.lugar = state.config.punto_actual || state.config.lugar_actual || '';
   const cid = document.getElementById('modalClienteUnidad').value;
   if (cid) body.cliente_id = cid;
+  if (body.metodo_pago === 'mixto' && body.moneda === 'VES') {
+    const totalVes = calcVes(body.precio_usd);
+    const ef = parseFloat(document.getElementById('mixtoEfectivoUnidad')?.value) || 0;
+    body.efectivo_bs = Math.min(ef, totalVes);
+    body.pagomovil_bs = Math.max(0, totalVes - body.efectivo_bs);
+  }
   try {
     const venta = await api('POST', '/ventas', body);
     toast(venta.producto_nombre + ' vendido!');
@@ -566,6 +610,9 @@ export function abrirCarrito() {
     el.classList.toggle('active', el.dataset.val === 'efectivo');
   });
   document.getElementById('optPagoMovilCarrito').classList.add('hidden');
+  document.getElementById('optMixtoCarrito').classList.add('hidden');
+  document.getElementById('mixtoInputsUnidad')?.classList.add('hidden');
+  document.getElementById('mixtoInputsCarrito')?.classList.add('hidden');
   const sel = document.getElementById('modalClienteCarrito');
   sel.innerHTML = '<option value="">Sin cliente</option>';
   api('GET', '/clientes').then(clientes => {
@@ -580,6 +627,7 @@ export function abrirCarrito() {
 export async function confirmarVentaCarrito() {
   if (carrito.length === 0) { toast('Agrega al menos un producto'); return; }
   const clienteId = document.getElementById('modalClienteCarrito').value;
+  const totalUsdCarrito = carrito.reduce((s, item) => s + item.precio_usd * item.cantidad, 0);
   const body = {
     items: carrito.map(item => ({
       tipo_producto: item.tipo_producto,
@@ -594,6 +642,12 @@ export async function confirmarVentaCarrito() {
     lugar: state.config.punto_actual || state.config.lugar_actual || '',
     cliente_id: clienteId || null,
   };
+  if (body.metodo_pago === 'mixto' && body.moneda === 'VES') {
+    const totalVes = totalUsdCarrito * parseFloat(state.config.tasa_dolar || '0');
+    const ef = parseFloat(document.getElementById('mixtoEfectivoCarrito')?.value) || 0;
+    body.efectivo_bs = Math.min(ef, totalVes);
+    body.pagomovil_bs = Math.max(0, totalVes - body.efectivo_bs);
+  }
   try {
     await api('POST', '/ventas', body);
     const totalUsd = carrito.reduce((s, item) => s + item.precio_usd * item.cantidad, 0);

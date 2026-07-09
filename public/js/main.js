@@ -129,6 +129,7 @@ window.cerrarDia = cerrarDia;
 window.guardarVendedorActivo = guardarVendedorActivo;
 window.seleccionarMoneda = seleccionarMoneda;
 window.seleccionarMetodoPago = seleccionarMetodoPago;
+window.actualizarMixtoPagoMovil = actualizarMixtoPagoMovil;
 window.toggleModoVarias = toggleModoVarias;
 window.agregarAlCarrito = agregarAlCarrito;
 window.carritoSumar = carritoSumar;

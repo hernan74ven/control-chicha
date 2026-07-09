@@ -77,6 +77,7 @@ function renderDesglosePagos(pagoDesglose) {
   if (!pagoDesglose || pagoDesglose.length === 0) return '';
   const icono = (m, mp) => {
     if (m === 'USD') return 'USD';
+    if (mp === 'mixto') return 'Bs Mixto';
     return mp === 'pago_movil' ? 'Bs Pago Movil' : 'Bs Efectivo';
   };
   let rows = pagoDesglose.map(p =>

@@ -369,64 +369,74 @@ router.post('/ventas', async (req, res) => {
     const tasa = configSnap.exists ? parseFloat(configSnap.data().value) || 0 : 0;
     
     const mon = req.body.moneda || 'USD';
-    const mp = req.body.metodo_pago || 'efectivo';
-    const lugar = req.body.lugar || '';
-    const vendedorId = req.body.vendedor_id ? String(req.body.vendedor_id) : null;
-    const clienteId = req.body.cliente_id ? String(req.body.cliente_id) : null;
-    
-    const batch = db().batch();
-    const createdVentas = [];
-
-    if (req.body.items && Array.isArray(req.body.items) && req.body.items.length > 0) {
-      for (const item of req.body.items) {
-        if (!item.tipo_producto || !item.producto_nombre || item.precio_usd === undefined) continue;
-        const precioVes = item.precio_usd * tasa;
-        const cant = item.cantidad || 1;
-        for (let i = 0; i < cant; i++) {
-          const docRef = db().collection('ventas').doc();
-          const ventaData = {
-            tipo_producto: item.tipo_producto,
-            producto_id: item.producto_id ? String(item.producto_id) : null,
-            producto_nombre: item.producto_nombre,
-            precio_usd: item.precio_usd,
-            precio_ves: precioVes,
-            tasa_dia: tasa,
-            moneda: mon,
-            metodo_pago: mp,
-            lugar: lugar,
-            vendedor_id: vendedorId,
-            cliente_id: clienteId,
-            creado_en: new Date().toISOString()
-          };
-          batch.set(docRef, ventaData);
-          createdVentas.push({ id: docRef.id, ...ventaData });
-        }
-      }
-    } else {
-      const { tipo_producto, producto_id, producto_nombre, precio_usd } = req.body;
-      if (!tipo_producto || !producto_nombre || precio_usd === undefined) {
-        return jsonError(res, 'Faltan datos requeridos (tipo_producto, producto_nombre, precio_usd)');
-      }
-      const precioVes = precio_usd * tasa;
+      const mp = req.body.metodo_pago || 'efectivo';
+      const lugar = req.body.lugar || '';
+      const vendedorId = req.body.vendedor_id ? String(req.body.vendedor_id) : null;
+      const clienteId = req.body.cliente_id ? String(req.body.cliente_id) : null;
+      const efectivoBs = req.body.efectivo_bs ? parseFloat(req.body.efectivo_bs) : null;
+      const pagomovilBs = req.body.pagomovil_bs ? parseFloat(req.body.pagomovil_bs) : null;
       
-      const docRef = db().collection('ventas').doc();
-      const ventaData = {
-        tipo_producto,
-        producto_id: producto_id ? String(producto_id) : null,
-        producto_nombre,
-        precio_usd,
-        precio_ves: precioVes,
-        tasa_dia: tasa,
-        moneda: mon,
-        metodo_pago: mp,
-        lugar: lugar,
-        vendedor_id: vendedorId,
-        cliente_id: clienteId,
-        creado_en: new Date().toISOString()
-      };
-      batch.set(docRef, ventaData);
-      createdVentas.push({ id: docRef.id, ...ventaData });
-    }
+      const batch = db().batch();
+      const createdVentas = [];
+
+      if (req.body.items && Array.isArray(req.body.items) && req.body.items.length > 0) {
+        for (const item of req.body.items) {
+          if (!item.tipo_producto || !item.producto_nombre || item.precio_usd === undefined) continue;
+          const precioVes = item.precio_usd * tasa;
+          const cant = item.cantidad || 1;
+          for (let i = 0; i < cant; i++) {
+            const docRef = db().collection('ventas').doc();
+            const ventaData = {
+              tipo_producto: item.tipo_producto,
+              producto_id: item.producto_id ? String(item.producto_id) : null,
+              producto_nombre: item.producto_nombre,
+              precio_usd: item.precio_usd,
+              precio_ves: precioVes,
+              tasa_dia: tasa,
+              moneda: mon,
+              metodo_pago: mp,
+              lugar: lugar,
+              vendedor_id: vendedorId,
+              cliente_id: clienteId,
+              creado_en: new Date().toISOString()
+            };
+            if (mp === 'mixto' && efectivoBs !== null && pagomovilBs !== null) {
+              ventaData.efectivo_bs = efectivoBs / cant;
+              ventaData.pagomovil_bs = pagomovilBs / cant;
+            }
+            batch.set(docRef, ventaData);
+            createdVentas.push({ id: docRef.id, ...ventaData });
+          }
+        }
+      } else {
+        const { tipo_producto, producto_id, producto_nombre, precio_usd } = req.body;
+        if (!tipo_producto || !producto_nombre || precio_usd === undefined) {
+          return jsonError(res, 'Faltan datos requeridos (tipo_producto, producto_nombre, precio_usd)');
+        }
+        const precioVes = precio_usd * tasa;
+        
+        const docRef = db().collection('ventas').doc();
+        const ventaData = {
+          tipo_producto,
+          producto_id: producto_id ? String(producto_id) : null,
+          producto_nombre,
+          precio_usd,
+          precio_ves: precioVes,
+          tasa_dia: tasa,
+          moneda: mon,
+          metodo_pago: mp,
+          lugar: lugar,
+          vendedor_id: vendedorId,
+          cliente_id: clienteId,
+          creado_en: new Date().toISOString()
+        };
+        if (mp === 'mixto' && efectivoBs !== null && pagomovilBs !== null) {
+          ventaData.efectivo_bs = efectivoBs;
+          ventaData.pagomovil_bs = pagomovilBs;
+        }
+        batch.set(docRef, ventaData);
+        createdVentas.push({ id: docRef.id, ...ventaData });
+      }
     
     await batch.commit();
 
@@ -509,11 +519,27 @@ router.get('/reportes/resumen', async (req, res) => {
       diasMap[dia].cantidad++;
       diasMap[dia].total += (data.precio_usd || 0);
       
-      const key = `${data.moneda || 'USD'}-${data.metodo_pago || 'efectivo'}`;
-      if (!pagosMap[key]) pagosMap[key] = { moneda: data.moneda, metodo_pago: data.metodo_pago, cantidad: 0, total_usd: 0, total_ves: 0 };
-      pagosMap[key].cantidad++;
-      pagosMap[key].total_usd += (data.precio_usd || 0);
-      pagosMap[key].total_ves += (data.precio_ves || 0);
+      if (data.metodo_pago === 'mixto' && data.moneda === 'VES') {
+        const ef = data.efectivo_bs || 0;
+        const pm = data.pagomovil_bs || 0;
+        const total = ef + pm || 1;
+        const keyEf = 'VES-efectivo';
+        if (!pagosMap[keyEf]) pagosMap[keyEf] = { moneda: 'VES', metodo_pago: 'efectivo', cantidad: 0, total_usd: 0, total_ves: 0 };
+        pagosMap[keyEf].cantidad++;
+        pagosMap[keyEf].total_usd += (data.precio_usd || 0) * (ef / total);
+        pagosMap[keyEf].total_ves += ef;
+        const keyPm = 'VES-pago_movil';
+        if (!pagosMap[keyPm]) pagosMap[keyPm] = { moneda: 'VES', metodo_pago: 'pago_movil', cantidad: 0, total_usd: 0, total_ves: 0 };
+        pagosMap[keyPm].cantidad++;
+        pagosMap[keyPm].total_usd += (data.precio_usd || 0) * (pm / total);
+        pagosMap[keyPm].total_ves += pm;
+      } else {
+        const key = `${data.moneda || 'USD'}-${data.metodo_pago || 'efectivo'}`;
+        if (!pagosMap[key]) pagosMap[key] = { moneda: data.moneda, metodo_pago: data.metodo_pago, cantidad: 0, total_usd: 0, total_ves: 0 };
+        pagosMap[key].cantidad++;
+        pagosMap[key].total_usd += (data.precio_usd || 0);
+        pagosMap[key].total_ves += (data.precio_ves || 0);
+      }
     });
     
     const masVendido = Object.keys(productosMap)

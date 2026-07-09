@@ -97,6 +97,34 @@ header h1 .logo-icon {
   backdrop-filter: blur(4px);
 }
 
+/* Mixto payment inputs */
+.mixto-inputs {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mixto-inputs label {
+  font-size: 0.82rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mixto-inputs input {
+  width: 100px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
 /* Punto selector */
 .punto-selector {
   text-align: center;

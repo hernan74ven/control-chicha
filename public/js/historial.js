@@ -1,9 +1,10 @@
 import { state } from './state.js';
 import { api } from './api.js';
 import { toast, todayStr, fmtCurrency, fmtVes, fmtDate, fmtTime } from './ui.js';
-import { renderVender } from './ventas.js';
+import { renderHeader, renderVender } from './ventas.js';
 
 export async function cargarHistorial() {
+  await renderHeader();
   const desde = document.getElementById('filterDesde').value || todayStr();
   const hasta = document.getElementById('filterHasta').value || todayStr();
   const vendedor = document.getElementById('filterVendedor').value;
@@ -42,8 +43,8 @@ function renderHistorial(ventas, dias) {
 
   const totalUsd = ventas.reduce((s, x) => s + x.precio_usd, 0);
   const totalVes = ventas.reduce((s, x) => s + x.precio_ves, 0);
-  const bsEf = ventas.filter(v => v.moneda === 'VES' && v.metodo_pago === 'efectivo').reduce((s, x) => s + x.precio_ves, 0);
-  const bsPM = ventas.filter(v => v.moneda === 'VES' && v.metodo_pago === 'pago_movil').reduce((s, x) => s + x.precio_ves, 0);
+  const bsEf = ventas.filter(v => v.moneda === 'VES' && (v.metodo_pago === 'efectivo' || v.metodo_pago === 'mixto')).reduce((s, x) => s + (x.efectivo_bs || (v.metodo_pago === 'efectivo' ? x.precio_ves : 0)), 0);
+  const bsPM = ventas.filter(v => v.moneda === 'VES' && (v.metodo_pago === 'pago_movil' || v.metodo_pago === 'mixto')).reduce((s, x) => s + (x.pagomovil_bs || (v.metodo_pago === 'pago_movil' ? x.precio_ves : 0)), 0);
 
   totalsEl.innerHTML = `
     <div class="ht-item"><div class="ht-label">Ventas</div><div class="ht-value" style="color:var(--text);">${ventas.length}</div></div>
@@ -75,6 +76,7 @@ function renderHistorial(ventas, dias) {
 
   function iconoPago(moneda, metodo) {
     if (moneda === 'USD') return 'USD';
+    if (metodo === 'mixto') return 'Mixto';
     return metodo === 'pago_movil' ? 'Pago Movil' : 'Efectivo';
   }
 
@@ -85,11 +87,14 @@ function renderHistorial(ventas, dias) {
     const punto = v.lugar ? ' ' + v.lugar : '';
     const pagoLabel = iconoPago(v.moneda, v.metodo_pago);
     const monedaLabel = v.moneda === 'USD' ? 'USD' : 'Bs';
+    const mixtoDetail = v.metodo_pago === 'mixto' && v.efectivo_bs
+      ? ` <span style="font-size:0.7rem;color:var(--text-light)">(Ef ${fmtVes(v.efectivo_bs)} + PM ${fmtVes(v.pagomovil_bs)})</span>`
+      : '';
     html += `<div class="history-item">
       <div class="hi-left">
         <div class="hi-time">${fmtDate(v.creado_en)} ${fmtTime(v.creado_en)}</div>
         <div class="hi-name">${v.producto_nombre}</div>
-        <div class="hi-meta">${pagoLabel} ${monedaLabel}${vendedor}${cliente}${punto}</div>
+        <div class="hi-meta">${pagoLabel} ${monedaLabel}${mixtoDetail}${vendedor}${cliente}${punto}</div>
       </div>
       <div class="hi-right">
         <div class="hi-usd">$${fmtCurrency(v.precio_usd)}</div>
