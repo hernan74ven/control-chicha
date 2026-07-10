@@ -44,7 +44,8 @@ function renderHistorial(ventas, dias) {
 
   const totalUsd = ventas.reduce((s, x) => s + x.precio_usd, 0);
   const totalVes = ventas.reduce((s, x) => s + x.precio_ves, 0);
-  const chichasUsd = ventas.filter(v => v.moneda === 'USD' && v.tipo_producto === 'chicha').length;
+  const chichasUsd = ventas.filter(v => v.moneda === 'USD' && v.tipo_producto === 'chicha')
+    .reduce((s, v) => s + v.precio_usd, 0);
   const bsEf = ventas.filter(v => v.moneda === 'VES' && (v.metodo_pago === 'efectivo' || v.metodo_pago === 'mixto'))
     .reduce((s, v) => s + (v.efectivo_bs || (v.metodo_pago === 'efectivo' ? v.precio_ves : 0)), 0);
   const bsPM = ventas.filter(v => v.moneda === 'VES' && (v.metodo_pago === 'pago_movil' || v.metodo_pago === 'mixto'))
@@ -53,7 +54,7 @@ function renderHistorial(ventas, dias) {
   totalsEl.innerHTML = `
     <div class="ht-item"><div class="ht-label">Ventas</div><div class="ht-value" style="color:var(--text);">${ventas.length}</div></div>
     <div class="ht-item"><div class="ht-label">USD</div><div class="ht-value usd">$${fmtCurrency(totalUsd)}</div></div>
-    <div class="ht-item"><div class="ht-label">Chichas</div><div class="ht-value" style="color:var(--text);">${chichasUsd}</div></div>
+    <div class="ht-item"><div class="ht-label">USD Chicha</div><div class="ht-value usd">$${fmtCurrency(chichasUsd)}</div></div>
     <div class="ht-item"><div class="ht-label">Bs Efec.</div><div class="ht-value ves">${bsEf > 0 ? fmtVes(bsEf) : '0'}</div></div>
     <div class="ht-item"><div class="ht-label">Bs P.Movil</div><div class="ht-value ves">${bsPM > 0 ? fmtVes(bsPM) : '0'}</div></div>
   `;
