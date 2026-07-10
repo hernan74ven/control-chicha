@@ -147,21 +147,12 @@ export async function renderHeader() {
   document.getElementById('headerDate').textContent =
     now.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   const t = getTasa();
-  const punto = state.config.punto_actual || state.config.lugar_actual || '';
   document.getElementById('rateBadge').textContent = t > 0
     ? 'Bs ' + t.toFixed(2)
     : 'Configurar tasa';
   const sel = document.getElementById('puntoSelector');
-  try {
-    const puntos = await api('GET', '/puntos');
-    state.puntos = puntos;
-    const activo = state.config.punto_actual || state.config.lugar_actual || '';
-    sel.innerHTML = puntos.length > 1
-      ? `<select id="puntoSelect" onchange="window.cambiarPunto(this.value)">
-          ${puntos.map(p => `<option value="${p.nombre}" ${p.nombre === activo ? 'selected' : ''}>${p.nombre}</option>`).join('')}
-        </select>`
-      : activo ? ` <strong style="color:var(--primary);font-size:0.75rem;">${activo}</strong>` : '';
-  } catch (e) { sel.innerHTML = ''; }
+  const punto = state.config.punto_actual || state.config.lugar_actual || '';
+  sel.innerHTML = punto ? `<strong style="color:var(--primary);font-size:0.75rem;">${punto}</strong>` : '';
 }
 
 export async function cambiarPunto(nombre) {
@@ -353,7 +344,17 @@ export async function comenzarDia() {
   const punto = document.getElementById('inicioPunto').value.trim();
   if (!tasa || tasa <= 0) { toast('Ingresa la tasa del dolar'); return; }
   if (!onzas || onzas <= 0) { toast('Ingresa las onzas iniciales'); return; }
+  if (!punto) { toast('Selecciona un punto de venta'); return; }
+  const deviceId = getDeviceId();
   try {
+    const activos = await api('GET', '/puntos/activos');
+    const hoy = todayStr();
+    const activo = activos.find(a => a.nombre === punto && a.fecha === hoy);
+    if (activo && activo.dispositivo !== deviceId) {
+      toast('El punto ' + punto + ' ya está abierto en ' + (activo.dispositivo || 'otro dispositivo') + '. Cierra ese día primero.');
+      return;
+    }
+    await api('POST', '/puntos/activos', { nombre: punto, fecha: hoy, dispositivo: deviceId });
     await api('PUT', '/config', { key: 'tasa_dolar', value: String(tasa) });
     await api('PUT', '/config', { key: 'chicha_inicial_onzas', value: String(onzas) });
     await api('PUT', '/config', { key: 'punto_actual', value: punto });
@@ -411,7 +412,10 @@ export async function cerrarDia() {
       chicha_ventas
     });
     await api('PUT', '/config', { key: 'chicha_inicial_onzas', value: '0' });
-    if (punto) await api('PUT', '/config', { key: 'punto_' + punto + '_chicha_inicial_onzas', value: '0' });
+    if (punto) {
+      await api('PUT', '/config', { key: 'punto_' + punto + '_chicha_inicial_onzas', value: '0' });
+      await api('DELETE', `/puntos/activos/${hoy}/${encodeURIComponent(punto)}`);
+    }
     chichaVendidoHoy = 0;
     diaCerradoHoy = true;
     toast('Dia cerrado');
@@ -678,6 +682,15 @@ function checkDiaActivo() {
 
 function getPuntoActual() {
   return state.config.punto_actual || state.config.lugar_actual || '';
+}
+
+function getDeviceId() {
+  let id = localStorage.getItem('controlchicha_device_id');
+  if (!id) {
+    id = 'dev_' + Math.random().toString(36).slice(2, 10) + '_' + Date.now().toString(36);
+    localStorage.setItem('controlchicha_device_id', id);
+  }
+  return id;
 }
 
 export async function inicializarChichaVendido() {

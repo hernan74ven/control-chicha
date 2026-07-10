@@ -734,7 +734,7 @@ router.delete('/receta/ingredientes/:id', async (req, res) => {
 // ---- BACKUP (exportar datos a JSON) ----
 router.post('/backup', async (req, res) => {
   try {
-    const collections = ['config', 'tamanos', 'otros_productos', 'vendedores', 'clientes', 'ventas', 'inventario', 'inventario_movimientos', 'receta_ingredientes', 'puntos'];
+    const collections = ['config', 'tamanos', 'otros_productos', 'vendedores', 'clientes', 'ventas', 'inventario', 'inventario_movimientos', 'receta_ingredientes', 'puntos', 'puntos_activos'];
     const backup = {};
     for (const name of collections) {
       const snap = await db().collection(name).get();
@@ -801,6 +801,48 @@ router.get('/dias', async (req, res) => {
 });
 
 // ---- PUNTOS DE VENTA ----
+router.get('/puntos/activos', async (req, res) => {
+  try {
+    const snapshot = await db().collection('puntos_activos').get();
+    const result = [];
+    snapshot.forEach(doc => result.push({ id: doc.id, ...doc.data() }));
+    jsonOk(res, result);
+  } catch (e) {
+    jsonError(res, 'Error al leer puntos activos', 500);
+  }
+});
+
+router.post('/puntos/activos', async (req, res) => {
+  try {
+    const { nombre, fecha, dispositivo } = req.body;
+    if (!nombre || !fecha) return jsonError(res, 'Falta nombre o fecha');
+    const docId = fecha + '_' + nombre;
+    const existing = await db().collection('puntos_activos').doc(docId).get();
+    if (existing.exists && existing.data().dispositivo !== dispositivo) {
+      return jsonError(res, 'El punto ' + nombre + ' ya está abierto por ' + (existing.data().dispositivo || 'otro dispositivo'));
+    }
+    await db().collection('puntos_activos').doc(docId).set({
+      nombre,
+      fecha,
+      dispositivo: dispositivo || 'desconocido',
+      abierto_en: new Date().toISOString()
+    });
+    jsonOk(res, { ok: true });
+  } catch (e) {
+    jsonError(res, 'Error al activar punto', 500);
+  }
+});
+
+router.delete('/puntos/activos/:fecha/:nombre', async (req, res) => {
+  try {
+    const docId = req.params.fecha + '_' + req.params.nombre;
+    await db().collection('puntos_activos').doc(docId).delete();
+    jsonOk(res, { deleted: true });
+  } catch (e) {
+    jsonError(res, 'Error al cerrar punto', 500);
+  }
+});
+
 router.get('/puntos', async (req, res) => {
   try {
     const snapshot = await db().collection('puntos').get();
