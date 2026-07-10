@@ -21,7 +21,12 @@ export async function cargarReceta() {
     ]);
     state.config = config;
     const batchSize = parseFloat(config.receta_batch_size) || 10;
-    const batchUnidad = config.receta_batch_unidad || 'kg';
+    const batchUnidad = config.receta_batch_unidad || 'litros';
+    const totalOnzasCalc = batchSize * 72;
+    if (parseFloat(config.receta_total_onzas) !== totalOnzasCalc) {
+      await api('PUT', '/config', { key: 'receta_total_onzas', value: String(totalOnzasCalc) });
+      config.receta_total_onzas = String(totalOnzasCalc);
+    }
     renderReceta(ingredientes, tamanos, batchSize, batchUnidad);
   } catch (e) {
     toast('Error al cargar receta');
@@ -85,16 +90,15 @@ function renderReceta(ingredientes, tamanos, batchSize, batchUnidad) {
     <div class="receta-batch">
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;width:100%;">
         <label>Lote:</label>
-        <input type="number" id="recetaBatchSize" value="${batchSize}" min="0" step="0.5" onchange="window.guardarBatchSize()" style="width:70px;">
+        <input type="number" id="recetaBatchSize" value="${batchSize}" min="1" step="1" onchange="window.guardarBatchSize()" style="width:70px;">
         <span>${batchUnidad}</span>
-        <label style="margin-left:8px;">Rinde:</label>
-        <input type="number" id="recetaTotalOnzas" value="${totalOnzas}" min="0" step="1" onchange="window.guardarTotalOnzas()" style="width:60px;">
-        <span>onzas</span>
+        <span style="font-size:0.8rem;color:var(--text-light);">= ${totalOnzas} oz</span>
         <span style="margin-left:auto;font-size:0.8rem;color:var(--text-light);">Costo/onza:</span>
         <span class="receta-total">$${costoPorOnza > 0 ? fmtCurrency(costoPorOnza) : '0.00'}</span>
       </div>
       <div style="display:flex;gap:10px;width:100%;margin-top:6px;font-size:0.8rem;color:var(--text-light);">
         <span>Costo total lote: <strong style="color:var(--text);">$${fmtCurrency(totalCosto)}</strong></span>
+        <span>1L = 72 oz</span>
       </div>
     </div>
     <div class="receta-ingredientes">
@@ -103,8 +107,8 @@ function renderReceta(ingredientes, tamanos, batchSize, batchUnidad) {
     </div>
     ${resultsHtml}
     <div style="margin-top:12px;padding:8px 0;font-size:0.7rem;color:var(--text-light);text-align:center;">
-      Precio por onza = costo del lote / onzas totales. El costo por vaso = onzas del vaso x costo/onza.<br>
-      Las cantidades de ingredientes son fijas para 10 kg de chicha. Solo actualiza los precios.
+      1 litro = 72 onzas. Las onzas se calculan automaticamente.<br>
+      El costo por vaso = onzas del vaso x costo/onza.
     </div>
   `;
 }
@@ -181,9 +185,12 @@ export async function actualizarOnzas(tamanoId, valor) {
 }
 
 export async function guardarBatchSize() {
-  const val = document.getElementById('recetaBatchSize').value;
+  const val = parseFloat(document.getElementById('recetaBatchSize').value) || 10;
+  const totalOnzas = val * 72;
   try {
     await api('PUT', '/config', { key: 'receta_batch_size', value: String(val) });
+    await api('PUT', '/config', { key: 'receta_total_onzas', value: String(totalOnzas) });
+    state.config.receta_total_onzas = String(totalOnzas);
     cargarReceta();
   } catch (e) { toast('Error'); }
 }
