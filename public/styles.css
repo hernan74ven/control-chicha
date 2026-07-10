@@ -125,6 +125,23 @@ header h1 .logo-icon {
   font-size: 0.9rem;
 }
 
+/* Day closed alert */
+@keyframes pulse-alert {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.dia-cerrado-alert {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  background: rgba(255, 107, 0, 0.1);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  animation: pulse-alert 2s ease-in-out infinite;
+}
+
 /* Inline punto selector in header */
 #puntoSelector select {
   font-size: 0.75rem;

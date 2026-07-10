@@ -294,10 +294,7 @@ export async function renderChichaStatus() {
 
   if (chichaInicialOnzas <= 0) {
     el.innerHTML = diaCerradoHoy
-      ? `<div class="cs-header">
-          <span class="cs-label">Chicha en envase</span>
-          <span style="font-size:0.72rem;color:var(--text-light);">Dia cerrado</span>
-        </div>`
+      ? `<div class="dia-cerrado-alert">Dia cerrado — no se pueden registrar ventas</div>`
       : `<div class="cs-header">
           <span class="cs-label">Chicha en envase</span>
           <span style="font-size:0.72rem;color:var(--text-light);">Dia no iniciado</span>
