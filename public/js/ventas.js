@@ -377,7 +377,7 @@ export async function comenzarDia() {
     toast('Dia iniciado: ' + onzas + ' oz - Tasa: Bs ' + tasa.toFixed(2) + (punto ? ' - ' + punto : ''));
     cerrarModal('modalInicioDia');
 state.config.tasa_dolar = String(tasa);
-    state.config.punto_actual = lugar;
+    state.config.punto_actual = punto;
     window.renderAll();
   } catch (e) { toast('Error: ' + e.message); }
 }
