@@ -153,6 +153,7 @@ export async function renderHeader() {
   const sel = document.getElementById('puntoSelector');
   const punto = state.config.punto_actual || state.config.lugar_actual || '';
   sel.innerHTML = punto ? `<strong style="color:var(--primary);font-size:0.75rem;">${punto}</strong>` : '';
+  sel.onclick = null;
 }
 
 export async function cambiarPunto(nombre) {
