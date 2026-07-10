@@ -305,18 +305,11 @@ export async function renderChichaStatus() {
     el.innerHTML = diaCerradoHoy
       ? `<div class="cs-header">
           <span class="cs-label">Chicha en envase</span>
-          <span class="cs-closed-label" onmousedown="window._iniciarReapertura()" onmouseup="window._cancelarReapertura()" onmouseleave="window._cancelarReapertura()" ontouchstart="window._iniciarReapertura()" ontouchend="window._cancelarReapertura()" ontouchcancel="window._cancelarReapertura()">Ya cerró el día</span>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-          <span style="font-size:0.75rem;color:var(--text-light);">Mantén presionado "Ya cerró el día" 6 seg para reabrir</span>
+          <span style="font-size:0.72rem;color:var(--text-light);">Dia cerrado</span>
         </div>`
       : `<div class="cs-header">
           <span class="cs-label">Chicha en envase</span>
           <span style="font-size:0.72rem;color:var(--text-light);">Dia no iniciado</span>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-          <span style="font-size:0.75rem;color:var(--text-light);">Inicia el dia para comenzar a vender</span>
-          <button class="btn btn-sm btn-primary" onclick="window.mostrarInicioDia()">Comenzar Dia</button>
         </div>`;
     return;
   }
