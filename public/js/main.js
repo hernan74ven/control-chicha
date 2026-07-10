@@ -106,7 +106,7 @@ setInterval(() => sincronizarChichaVendido(), 300000);
 
 // ---- Wire up tab buttons ----
 document.querySelectorAll('.nav-btn').forEach(btn => {
-  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  btn.addEventListener('click', () => { if (btn.dataset.tab) switchTab(btn.dataset.tab); });
 });
 
 // ---- Wire up modal overlay clicks ----
