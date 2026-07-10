@@ -63,8 +63,7 @@ function renderReportes(data) {
     <div class="report-cards">
       <div class="report-card"><div class="rc-label">Ventas</div><div class="rc-value" style="color:var(--text);">${t.total_ventas}</div></div>
       <div class="report-card"><div class="rc-label">USD</div><div class="rc-value usd">$${fmtCurrency(t.total_usd)}</div></div>
-      <div class="report-card"><div class="rc-label">Bs Efectivo</div><div class="rc-value ves">${d.bs_efectivo.ves > 0 ? fmtVes(d.bs_efectivo.ves) : '0'}</div></div>
-      <div class="report-card"><div class="rc-label">Bs P.Movil</div><div class="rc-value ves">${d.bs_pago_movil.ves > 0 ? fmtVes(d.bs_pago_movil.ves) : '0'}</div></div>
+      <div class="report-card"><div class="rc-label">Bs</div><div class="rc-value ves">${(d.bs_efectivo.ves + d.bs_pago_movil.ves) > 0 ? fmtVes(d.bs_efectivo.ves + d.bs_pago_movil.ves) : '0'}</div></div>
     </div>
     ${renderDesglosePagos(data.pagoDesglose)}
     ${renderMasVendido(data.masVendido)}
