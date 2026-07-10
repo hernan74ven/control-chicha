@@ -149,18 +149,18 @@ export async function renderHeader() {
   const t = getTasa();
   const punto = state.config.punto_actual || state.config.lugar_actual || '';
   document.getElementById('rateBadge').textContent = t > 0
-    ? 'Bs ' + t.toFixed(2) + (punto ? ' ' + punto : '')
+    ? 'Bs ' + t.toFixed(2)
     : 'Configurar tasa';
   const sel = document.getElementById('puntoSelector');
   try {
     const puntos = await api('GET', '/puntos');
     state.puntos = puntos;
     const activo = state.config.punto_actual || state.config.lugar_actual || '';
-    sel.innerHTML = puntos.length > 0
-      ? `<select id="puntoSelect" onchange="window.cambiarPunto(this.value)" style="font-size:0.78rem;padding:4px 8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--card);color:var(--text);">
+    sel.innerHTML = puntos.length > 1
+      ? `<select id="puntoSelect" onchange="window.cambiarPunto(this.value)">
           ${puntos.map(p => `<option value="${p.nombre}" ${p.nombre === activo ? 'selected' : ''}>${p.nombre}</option>`).join('')}
         </select>`
-      : '';
+      : activo ? ` <strong style="color:var(--primary);font-size:0.75rem;">${activo}</strong>` : '';
   } catch (e) { sel.innerHTML = ''; }
 }
 

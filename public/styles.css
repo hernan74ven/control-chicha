@@ -22,7 +22,7 @@ body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: var(--bg);
   color: var(--text);
-  padding-top: calc(var(--header-height) + 38px);
+  padding-top: var(--header-height);
   padding-bottom: var(--nav-height);
   min-height: 100vh;
   -webkit-tap-highlight-color: transparent;
@@ -125,22 +125,16 @@ header h1 .logo-icon {
   font-size: 0.9rem;
 }
 
-/* Punto selector */
-.punto-selector {
-  text-align: center;
-  padding: 4px 16px;
-  background: var(--card);
-  border-bottom: 1px solid var(--border);
-  margin-top: var(--header-height);
-}
-.punto-selector select {
-  font-size: 0.82rem;
-  padding: 5px 10px;
+/* Inline punto selector in header */
+#puntoSelector select {
+  font-size: 0.75rem;
+  padding: 2px 6px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text);
-  max-width: 100%;
+  background: transparent;
+  color: var(--primary);
+  font-weight: 600;
+  cursor: pointer;
 }
 
 /* Bottom Nav */
