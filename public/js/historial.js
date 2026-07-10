@@ -4,7 +4,6 @@ import { toast, todayStr, fmtCurrency, fmtVes, fmtDate, fmtTime } from './ui.js'
 import { renderHeader, renderVender } from './ventas.js';
 
 export async function cargarHistorial() {
-  await renderHeader();
   const desde = document.getElementById('filterDesde').value || todayStr();
   const hasta = document.getElementById('filterHasta').value || todayStr();
   const vendedor = document.getElementById('filterVendedor').value;
@@ -20,8 +19,10 @@ export async function cargarHistorial() {
     const ventasFiltradas = punto ? ventas.filter(v => v.lugar === punto) : ventas;
     const diasFiltrados = punto ? dias.filter(d => d.punto === punto) : dias;
     renderHistorial(ventasFiltradas, diasFiltrados);
+    renderHeader().catch(() => {});
   } catch (e) {
-    toast('Error al cargar historial');
+    console.error('Error cargarHistorial:', e);
+    toast('Error al cargar historial: ' + (e.message || ''));
   }
 }
 

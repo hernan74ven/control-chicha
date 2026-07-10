@@ -151,7 +151,7 @@ export async function renderHeader() {
     ? 'Bs ' + t.toFixed(2)
     : 'Configurar tasa';
   const sel = document.getElementById('puntoSelector');
-  const punto = state.config.punto_actual || state.config.lugar_actual || '';
+  const punto = (state.config && (state.config.punto_actual || state.config.lugar_actual)) || '';
   sel.innerHTML = punto ? `<strong style="color:var(--primary);font-size:0.75rem;">${punto}</strong>` : '';
   sel.onclick = null;
 }
