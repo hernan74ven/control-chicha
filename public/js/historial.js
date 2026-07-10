@@ -44,8 +44,10 @@ function renderHistorial(ventas, dias) {
 
   const totalUsd = ventas.reduce((s, x) => s + x.precio_usd, 0);
   const totalVes = ventas.reduce((s, x) => s + x.precio_ves, 0);
-  const bsEf = ventas.filter(v => v.moneda === 'VES' && (v.metodo_pago === 'efectivo' || v.metodo_pago === 'mixto')).reduce((s, x) => s + (x.efectivo_bs || (v.metodo_pago === 'efectivo' ? x.precio_ves : 0)), 0);
-  const bsPM = ventas.filter(v => v.moneda === 'VES' && (v.metodo_pago === 'pago_movil' || v.metodo_pago === 'mixto')).reduce((s, x) => s + (x.pagomovil_bs || (v.metodo_pago === 'pago_movil' ? x.precio_ves : 0)), 0);
+  const bsEf = ventas.filter(v => v.moneda === 'VES' && (v.metodo_pago === 'efectivo' || v.metodo_pago === 'mixto'))
+    .reduce((s, v) => s + (v.efectivo_bs || (v.metodo_pago === 'efectivo' ? v.precio_ves : 0)), 0);
+  const bsPM = ventas.filter(v => v.moneda === 'VES' && (v.metodo_pago === 'pago_movil' || v.metodo_pago === 'mixto'))
+    .reduce((s, v) => s + (v.pagomovil_bs || (v.metodo_pago === 'pago_movil' ? v.precio_ves : 0)), 0);
 
   totalsEl.innerHTML = `
     <div class="ht-item"><div class="ht-label">Ventas</div><div class="ht-value" style="color:var(--text);">${ventas.length}</div></div>
